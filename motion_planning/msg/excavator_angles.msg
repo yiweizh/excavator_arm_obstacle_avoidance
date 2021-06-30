@@ -1,3 +1,3 @@
-float32 angle0
-float32 angle1
-float32 angle2
+float32 angle_base
+float32 angle_boom
+float32 angle_stick

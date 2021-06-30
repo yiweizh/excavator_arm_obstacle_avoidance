@@ -52,14 +52,16 @@ find_package(catkin REQUIRED COMPONENTS
    add_message_files(
      FILES
      excavator_angles.msg
+     excavator_control_signals.msg
+     joint_angle_control.msg
    )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+   FILES
+   joint_control.srv
+
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(

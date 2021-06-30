@@ -16,9 +16,9 @@ class AngleSubscriber(object):
         return self.angles
 
     def angle_callback(self,data):
-        self.angles[0] = data.angle0
-        self.angles[1] = data.angle1
-        self.angles[2] = data.angle2
+        self.angles[0] = data.angle_base
+        self.angles[1] = data.angle_boom
+        self.angles[2] = data.angle_stick
 
 
 if __name__ == '__main__':
@@ -26,7 +26,8 @@ if __name__ == '__main__':
     angle_subscriber = AngleSubscriber()
     try:
         while not rospy.is_shutdown():
-            print(angle_subscriber.get_angles())
+            angles = angle_subscriber.get_angles()
+            print("base: %f, boom: %f, stick: %f"%(angles[0],angles[1],angles[2]))
             time.sleep(0.001)
 
     except KeyboardInterrupt or rospy.ROSInterruptException:
