@@ -119,3 +119,5 @@ void CJY901::GetGPSV()
 	readRegisters(ucDevAddr, GPSHeight, 8, (char *)&stcGPSV);
 }
 CJY901 JY901 = CJY901();
+CJY901 JY901_0 = CJY901();
+CJY901 JY901_1 = CJY901();

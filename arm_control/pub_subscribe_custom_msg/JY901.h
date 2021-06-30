@@ -162,5 +162,8 @@ class CJY901
 	void writeRegister(unsigned char deviceAddr,unsigned char addressToWrite,unsigned char bytesToRead, char *dataToWrite);
 };
 extern CJY901 JY901;
+extern CJY901 JY901_0;
+extern CJY901 JY901_1;
+extern CJY901 JY901_2;
 #include <Wire.h>
 #endif
