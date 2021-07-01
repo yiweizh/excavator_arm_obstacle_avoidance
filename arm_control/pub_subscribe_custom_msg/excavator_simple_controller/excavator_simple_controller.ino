@@ -7,9 +7,20 @@
 
 #include <ros.h>
 #include "motion_planning/excavator_control_signals.h"
+#include <Servo.h> 
+#include "AutoControl.h"
+
+
+// output pins
+#define PUMP_PIN 11
+#define BASE_PIN 10
+#define BOOM_PIN 9
+#define STICK_PIN 8
+
+
 
 // custom function definition
-// callback for target angle subscriber
+// callback for exacavator control subscriber
 
 void excavator_control_callback(const motion_planning::excavator_control_signals& msg);
 
@@ -20,17 +31,53 @@ ros::Subscriber<motion_planning::excavator_control_signals> excavator_control_su
 
 
 // create variables
-unsigned int   boom_servo;  // boom servo angle, valid values: 45,90,135
-unsigned int   stick_servo; // boom servo angle, valid values: 45,90,135
-unsigned int   pump_mode; // pwm mode, 0 for stop, 1 for normal operation, 2 for special operation (used when the pump motor may be stuck due to hight pressure)
-float base_pwm; // pwm for base
+float   boom_servo;  // boom servo angle, valid values: 45,90,135
+float   stick_servo; // boom servo angle, valid values: 45,90,135
+float   pump_mode; // pwm mode, 0 for stop, 1 for normal operation, 2 for special operation (used when the pump motor may be stuck due to hight pressure)
+float   base_pwm; // pwm for bases
 
+float Source_Pwm_Out = Source_Pwm_Init;
+
+// servos
+Servo PUMP_ESC;
+Servo BASE_ESC;
+Servo Boom_SERVO;
+Servo STICK_SERVO;
 
 
 // custom functions
+void controlBoomServo(){
+  Boom_SERVO.write(boom_servo);
+  }
 
 
+void controlStickServo(){
+  STICK_SERVO.write(stick_servo);
+  }
 
+void controlPUMP(){
+  // three cases
+  if(pump_mode == 2.0){
+    Source_Pwm_Out = 6.0;
+    PUMP_ESC.writeMicroseconds(200.0*Source_Pwm_Out);
+    delay(2000);
+    PUMP_ESC.writeMicroseconds(200.0*Source_Pwm_Init);
+    delay(500);
+    }
+  else if(pump_mode == 1.0){
+    Source_Pwm_Out = 6.0;
+    PUMP_ESC.writeMicroseconds(200.0*Source_Pwm_Out);
+    }
+  else{
+    Source_Pwm_Out = 5.0;
+    PUMP_ESC.writeMicroseconds(200.0*Source_Pwm_Out);
+    }
+    
+  }
+
+void controlBase(){
+  BASE_ESC.writeMicroseconds(200.0*base_pwm);
+  }
 
 void excavator_control_callback(const motion_planning::excavator_control_signals& msg){
 
@@ -68,17 +115,34 @@ void setup() {
   nh.subscribe(excavator_control_subscriber);
 
 
+
   // initialize variables
   boom_servo = 90; // servo at center, close the tube
   stick_servo = 90; // servo at center, close the tube
   pump_mode = 0; // stop the pump
   base_pwm = 0.0; // no base motion
-  
+
+  PUMP_ESC.attach(PUMP_PIN);
+  BASE_ESC.attach(BASE_PIN);
+  Boom_SERVO.attach(BOOM_PIN);
+  STICK_SERVO.attach(STICK_PIN);
+
+  // apply control
+  controlBoomServo();
+  controlStickServo();
+  controlPUMP();
+  controlBase();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   
+  // apply control
+  controlBoomServo();
+  controlStickServo();
+  controlPUMP();
+  controlBase();
+
   
   nh.spinOnce();
   delay(10);
