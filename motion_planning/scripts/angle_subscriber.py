@@ -8,9 +8,10 @@ import time
 from motion_planning.msg import excavator_angles
 
 class AngleSubscriber(object):
-    def __init__(self):
+    def __init__(self,topic='target_angles'):
         self.angles = [0,0,0]
-        self.angle_subscribe = rospy.Subscriber('measured_angles',excavator_angles,self.angle_callback)
+        self.topic = topic
+        self.angle_subscribe = rospy.Subscriber(self.topic,excavator_angles,self.angle_callback)
 
     def get_angles(self):
         return self.angles
