@@ -59,7 +59,15 @@ float read_boom(){
   return -((float)JY901_1.stcAngle.Angle[1]/32768*180);
 }
 
-
+// get joint angle of base
+float read_base(){
+  serial1.listen();
+  delay(100);
+  while (serial1.available()){
+    JY901_1.CopeSerialData(serial1.read());
+  }
+  return -((float)JY901_1.stcAngle.Angle[2]/32768*180);
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -86,11 +94,11 @@ void setup() {
 void loop() {
   
   // put your main code here, to run repeatedly:
-  float angle_base = 0.0;
+  float angle_base = read_base();
   float angle_boom = read_boom();
   float angle_stick = read_stick();
 
-  measured_angle.angle_base = 0;
+  measured_angle.angle_base = angle_base;
   measured_angle.angle_boom = angle_boom;
   measured_angle.angle_stick = angle_stick;
   measured_angle_publisher.publish(&measured_angle);
@@ -106,7 +114,7 @@ void loop() {
   char angle_stick_char[32];
   dtostrf(angle_stick,6,2,angle_stick_char);
 
-  sprintf(log_msg, "angle_base: %s, angle_base: %s, angle_stick: %s",angle_base_char,angle_boom_char,angle_stick_char);
+  sprintf(log_msg, "angle_base: %s, angle_boom: %s, angle_stick: %s",angle_base_char,angle_boom_char,angle_stick_char);
   nh.loginfo(log_msg);
   /*angle_base.data = 0;
   angle_boom.data = 0;//read_boom();

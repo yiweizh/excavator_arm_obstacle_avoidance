@@ -13,9 +13,11 @@
 
 // output pins
 #define PUMP_PIN 11
-#define BASE_PIN 10
-#define BOOM_PIN 9
-#define STICK_PIN 8
+#define BASE_PWM_PIN 10
+#define BOOM_PIN 8
+#define STICK_PIN 9
+#define BASE_IN1 7
+#define BASE_IN2 6
 
 
 
@@ -76,7 +78,27 @@ void controlPUMP(){
   }
 
 void controlBase(){
-  BASE_ESC.writeMicroseconds(200.0*base_pwm);
+  float pwm_limit = 0.0;
+  if (base_pwm > pwm_limit){
+    BASE_ESC.writeMicroseconds(200.0*base_pwm);
+    // turn left, positive
+    digitalWrite(BASE_IN1, LOW);
+    digitalWrite(BASE_IN2, HIGH);
+    }
+  else if(base_pwm <= -pwm_limit){
+    BASE_ESC.writeMicroseconds(200.0*base_pwm);
+    // turn right, negative
+    digitalWrite(BASE_IN1, HIGH);
+    digitalWrite(BASE_IN2, LOW);
+    }
+  else{
+    analogWrite(BASE_PWM_PIN,0);
+    // stop turning
+    digitalWrite(BASE_IN1, LOW);
+    digitalWrite(BASE_IN2, LOW);
+    }
+  
+  
   }
 
 void excavator_control_callback(const motion_planning::excavator_control_signals& msg){
@@ -123,9 +145,11 @@ void setup() {
   base_pwm = 0.0; // no base motion
 
   PUMP_ESC.attach(PUMP_PIN);
-  BASE_ESC.attach(BASE_PIN);
+  BASE_ESC.attach(BASE_PWM_PIN);
   Boom_SERVO.attach(BOOM_PIN);
   STICK_SERVO.attach(STICK_PIN);
+  pinMode(BASE_IN1,OUTPUT);
+  pinMode(BASE_IN2,OUTPUT);
 
   // apply control
   controlBoomServo();
