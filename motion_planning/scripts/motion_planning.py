@@ -22,6 +22,8 @@ from angle_subscriber import AngleSubscriber # subscriber class for real excavat
 
 from motion_planning.msg import excavator_angles # data type for control command
 
+from marker_publisher import MarkerPublisher # publishers for excavator points, collision free path and bucker target
+
 
 ##### End Imports #####
 
@@ -48,6 +50,15 @@ class ExcavatorMotionPlanning(object):
         # storage variables
         self.bucket_goal = [] # goal for the bucket to reach, in terms of excavator coordinate system
         self.current_path = [] # a series of goal points for our excavator arm to reach
+
+
+        # flags
+        self.visualize = True # whether visualize data or not
+
+        # instances for visualization
+        self.excavator_pts_visualization = MarkerPublisher(topic = '/excavator_arm_pts', type = 0,id = 0,color = 'b') # publisher for pts on the excavator
+        self.path_visualization = MarkerPublisher('/collision_free_path',type = 1,id = 1,color = 'g') # publish as as a line strip
+        self.target_visualization = MarkerPublisher('/bucket_target',type = 0,id = 0,color = 'r') # publish the target of the bucket
 
         pass
 
