@@ -3,8 +3,7 @@
 #include <SoftwareSerial.h> 
 
 // Define the Software serials
-SoftwareSerial serial0(8,9); //RX=8, TX=9;
-SoftwareSerial serial1(10,11); //RX=10, TX=11;
+SoftwareSerial serial0(10,11); //RX=10, TX=11;
 
 
 /*
@@ -18,15 +17,14 @@ TX <---> 0(Rx)
  * ////////COMMENT /////////
  * ///////////////////////// 
  * If you want to define more than one pair of RX/TX and control multiple sensors
- * at least you need to do two things
- * 1. Check JY901.h and export more than one instance of the class CJY901 --> I have not seen any hint suggesting that the instance can be only be created uniquely
- * 2. Add more pairs of RX/TX pins by using SoftwareSerial. Remember to use "listen()" method to switch between different serials, since 
- *    Arduino can only "listen to" one softwareSerial at one time. Please check the bulit-in examples
+ * JY901_0 ---> IIC ---> boom
+ * JY901_1 ---> Serial ---> stick
  */
 
  
  static float stick_angle;
  static float boom_angle;
+ static float base_angle; 
  float read_stick();
  float read_boom();
  
@@ -35,56 +33,52 @@ void setup()
 {
   Serial.begin(9600);
   serial0.begin(9600);
-  serial1.begin(9600);
+  JY901_0.StartIIC();
 
 }
 
 void loop() 
 {
-  if(Serial.available()){
-    char read_in = Serial.read();
-    if(read_in == 's'){
-      //Print out the data when the user pressed 's'
+
+    //Read the new data in and process the corresponding data
+    stick_angle = read_stick();
+    base_angle = read_base();
+    boom_angle = read_boom();
       
-      //print received data. Data was received in serialEvent;
-      Serial.println("Stick (horizantal):");
-      Serial.print("Angle:");Serial.print(stick_angle);
-      Serial.println("");
+    //print received data. Data was received in serialEvent;
+    Serial.print(stick_angle);
+    Serial.print(',');
       
-      Serial.println("Boom (horizantal):");
-      Serial.print("Angle:");Serial.print(boom_angle);
+    Serial.print(boom_angle);
+    Serial.print(',');
+
+    Serial.print(base_angle);
       
       
-      Serial.println("");
-    }
- }
-  
-  //Read the new data in and process the corresponding data
-  stick_angle = read_stick();
-  boom_angle = read_boom();
-  
-  delay(200);
+    Serial.println("");
+    
+    delay(10);
 }
 
 float read_stick(){
-  serial0.listen();
-  delay(100);
+
    while (serial0.available()) 
   {
-    JY901_0.CopeSerialData(serial0.read()); //Call JY901 data cope function
+    JY901_1.CopeSerialData(serial0.read()); //Call JY901 data cope function
   }
-  return -((float)JY901_0.stcAngle.Angle[1]/32768*180);
+  return -((float)JY901_1.stcAngle.Angle[1]/32768*180);
+  
 }
 
 float read_boom(){
-  serial1.listen();
-  delay(100);
-  while (serial1.available()){
-    JY901_1.CopeSerialData(serial1.read());
-  }
-  return -((float)JY901_1.stcAngle.Angle[1]/32768*180);
+ JY901_0.GetAngle();
+ return ((float)JY901_0.stcAngle.Angle[1]/32768*180);
 }
 
+float read_base(){
+  JY901_0.GetAngle();
+  return ((float)JY901_0.stcAngle.Angle[2]/32768*180);
+}
 /*
   SerialEvent occurs whenever a new data comes in the
  {\bf hardware serial RX}.  This routine is run between each
