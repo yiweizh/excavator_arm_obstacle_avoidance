@@ -9,6 +9,7 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/passthrough.h>
 // #include <pcl/filters/extract_indices.h>
+typedef pcl::PointXYZ PointT;
 void viewerOneOff(pcl::visualization::PCLVisualizer& viewer)
 {
     viewer.setBackgroundColor(0,0,0);
@@ -17,7 +18,7 @@ void viewerOneOff(pcl::visualization::PCLVisualizer& viewer)
 int
  main (int argc, char** argv)
 {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1(new pcl::PointCloud<pcl::PointXYZ>), cloud2(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<PointT>::Ptr cloud1(new pcl::PointCloud<PointT>), cloud2(new pcl::PointCloud<PointT>);
     pcl::PCDReader reader;
     // 读入点云PCD文件
     reader.read(argv[1],*cloud1);
