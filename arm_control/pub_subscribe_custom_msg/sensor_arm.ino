@@ -3,8 +3,7 @@
 #include <SoftwareSerial.h> 
 
 // Define the Software serials
-SoftwareSerial serial0(8,9); //RX=8, TX=9;
-SoftwareSerial serial1(10,11); //RX=10, TX=11;
+SoftwareSerial serial0(10,11); //RX=10, TX=11;
 
 
 /*
@@ -18,73 +17,93 @@ TX <---> 0(Rx)
  * ////////COMMENT /////////
  * ///////////////////////// 
  * If you want to define more than one pair of RX/TX and control multiple sensors
- * at least you need to do two things
- * 1. Check JY901.h and export more than one instance of the class CJY901 --> I have not seen any hint suggesting that the instance can be only be created uniquely
- * 2. Add more pairs of RX/TX pins by using SoftwareSerial. Remember to use "listen()" method to switch between different serials, since 
- *    Arduino can only "listen to" one softwareSerial at one time. Please check the bulit-in examples
+ * JY901_0 ---> IIC ---> boom
+ * JY901_1 ---> Serial ---> stick
  */
 
  
+ static float raw_stick_angle;
  static float stick_angle;
  static float boom_angle;
- float read_stick();
- float read_boom();
+
+ static float raw_base_angle;
+ static float base_angle; 
+ static float base_init;
+ static float boom_stick_angle; 
  
+ static bool location; // 0: RHP; 1: LHP
+ void read_stick();
+ void read_boom_base();
+ float real_base_angle(float raw_base_angle);
 //Set up all the serials
 void setup() 
 {
   Serial.begin(9600);
   serial0.begin(9600);
-  serial1.begin(9600);
-
+  JY901_0.StartIIC();
+  
+  JY901_0.GetAngle();
+  base_init = (float)JY901_0.stcAngle.Angle[2]/32768*180;
 }
 
 void loop() 
 {
-  if(Serial.available()){
-    char read_in = Serial.read();
-    if(read_in == 's'){
-      //Print out the data when the user pressed 's'
+
+    //Read the new data in and process the corresponding data
+    read_boom_base();
+    read_stick();
+
+    stick_angle = (location == 0)? raw_stick_angle : (-180-raw_stick_angle);
+    base_angle = real_base_angle(raw_base_angle);
+    
       
-      //print received data. Data was received in serialEvent;
-      Serial.println("Stick (horizantal):");
-      Serial.print("Angle:");Serial.print(stick_angle);
-      Serial.println("");
+    //print received data. Data was received in serialEvent;
+    Serial.print(stick_angle);
+    Serial.print(',');
+    Serial.print(',');
+    Serial.print(boom_angle);
+    Serial.print(',');
+
+    //Calculate the angle between the boom and the stick
+    boom_stick_angle = 180-(boom_angle-stick_angle);
+    Serial.print(boom_stick_angle);
+    Serial.print(',');
+
+    Serial.print(base_angle);
       
-      Serial.println("Boom (horizantal):");
-      Serial.print("Angle:");Serial.print(boom_angle);
       
-      
-      Serial.println("");
-    }
- }
-  
-  //Read the new data in and process the corresponding data
-  stick_angle = read_stick();
-  boom_angle = read_boom();
-  
-  delay(200);
+    Serial.println("");
+    
+    delay(10);
 }
 
-float read_stick(){
-  serial0.listen();
-  delay(100);
+void read_stick(){
+
    while (serial0.available()) 
   {
-    JY901_0.CopeSerialData(serial0.read()); //Call JY901 data cope function
+    JY901_1.CopeSerialData(serial0.read()); //Call JY901 data cope function
   }
-  return -((float)JY901_0.stcAngle.Angle[1]/32768*180);
+  raw_stick_angle = -((float)JY901_1.stcAngle.Angle[1]/32768*180);
+  location = ((float)JY901_1.stcAngle.Angle[0] < 0 )? 1:0;
+  
 }
 
-float read_boom(){
-  serial1.listen();
-  delay(100);
-  while (serial1.available()){
-    JY901_1.CopeSerialData(serial1.read());
-  }
-  return -((float)JY901_1.stcAngle.Angle[1]/32768*180);
+void read_boom_base(){
+ JY901_0.GetAngle();
+ boom_angle = ((float)JY901_0.stcAngle.Angle[1]/32768*180);
+ raw_base_angle = ((float)JY901_0.stcAngle.Angle[2]/32768*180);
 }
 
+float real_base_angle(float raw_base_angle){
+  float result = raw_base_angle - base_init;
+  if(base_init < -90 && raw_base_angle >= 0){
+    result = -360-base_init+raw_base_angle;// -180-base_init-(180-raw_base_angle)
+  }
+  else if (base_init > 90 && raw_base_angle <0){
+    result = 360-base_init + raw_base_angle;//180-base_init + raw_base_angle+180;
+  }
+  return result;
+}
 /*
   SerialEvent occurs whenever a new data comes in the
  {\bf hardware serial RX}.  This routine is run between each
