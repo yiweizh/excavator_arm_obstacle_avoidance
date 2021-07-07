@@ -1,5 +1,11 @@
 # Perception Tutorial
 ## PCL Code
+### PointCloud Saver
+The code is used to save point cloud with aligned depth frame and color frames. It can also save the metadata associated with the frame.
+
+Please notice that the header file "example.hpp" should be located at the source code of librealsense. The path can be `<librealsense>/examples/example.hpp`.
+
+Other header files (`kbhit.hpp`, `cv-helpers.hpp`, `stb_image_write.h`) are either written by me or copied from librealsense source code. You can easily find them.
 ### Segmentation
 The segmentation part is found online. It consists of 
 1. SAC_RANSAC with iterative way to segment out plane
@@ -9,7 +15,7 @@ The segmentation part is found online. It consists of
 The visualizer code is implemented by pyhuang. It can visualize two groups of point clouds. 
 
 ### Usage
-To compile segmentation and visualization,
+To compile pointcloud saver, segmentation and visualization,
 ```
 cd <source code directory>
 mkdir build 
@@ -18,12 +24,23 @@ cmake ..
 make -j4
 ```
 
+To save point cloud, please make sure the realsense camera is connected.
+```
+mkdir dataset
+cd dataset/
+../build/pc_saver/pc_saver
+<Press Enter to generate point cloud>
+```
+You can press multiple times to save frames and pcd files.
+
+
 To run segmentation, 
 ```
 cd result/
 ../build/segment/segment <Path of PCD File>
 ```
 The result pcd is stored within result/
+
 
 To run visualization,
 ```
