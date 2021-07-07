@@ -6,8 +6,14 @@ To install pcl(Point Cloud Library)
 ```
 sudo apt-get install libpcl-dev
 ```
-
+To install boost
+```
+sudo apt-get install libboost-all-dev
+```
 You also need to install OpenCV 3.4.1 and [librealsense](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md). The official websites are well-documented. You can follow their guides to install them.
+
+Please notice:
+Even though the pcl library installed above is somewhat problematic (but it works for this project), I personally discourage any attempt to build it from source code. The process of dependency installation made me insane.
 ## PCL Code
 ### PointCloud Saver
 The code is used to save point cloud with aligned depth frame and color frames. It can also save the metadata associated with the frame.
