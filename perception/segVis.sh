@@ -1,4 +1,5 @@
 #!/bin/bash -e
-cd ./result
+mkdir segResult
+cd ./segResult
 ../build/segment/segment ${1}
 ../build/visualizer/visualizer ${2} ${1}
