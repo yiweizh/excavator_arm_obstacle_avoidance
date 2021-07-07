@@ -1,11 +1,13 @@
 # Perception Tutorial
 ## Dependecies
+This project works on Ubuntu.
+
 To install pcl(Point Cloud Library)
 ```
 sudo apt-get install libpcl-dev
 ```
 
-You also need to install OpenCV 3.4.1 and librealsense. The official websites are well-documented. You can follow their guides to install them.
+You also need to install OpenCV 3.4.1 and [librealsense](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md). The official websites are well-documented. You can follow their guides to install them.
 ## PCL Code
 ### PointCloud Saver
 The code is used to save point cloud with aligned depth frame and color frames. It can also save the metadata associated with the frame.
