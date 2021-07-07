@@ -38,7 +38,7 @@ cd dataset/
 ../build/pc_saver/pc_saver
 <Press Enter to generate point cloud>
 ```
-You can press multiple times to save frames and pcd files.
+You can press multiple times to save frames and pcd files. Those saved files are located at dataset/.
 
 
 To run segmentation, 
