@@ -38,6 +38,7 @@ class ExcavatorMotionPlanning(object):
 
         # set constants
 
+
         # tolerance
         self.middle_target_tolerance = 3 # how much angle difference we can tolerate for a middle target along a path
         self.end_target_tolerance = 1 # how much angle difference we can tolerate for the final target
@@ -48,8 +49,8 @@ class ExcavatorMotionPlanning(object):
 
 
         # storage variables
-        self.bucket_goal = [] # goal for the bucket to reach, in terms of excavator coordinate system
-        self.current_path = [] # a series of goal points for our excavator arm to reach
+        self.bucket_goal = [] # goal for the bucket to reach, in terms of excavator coordinate system， [x,y,z]
+        self.current_path = [] # a series of goal points for our excavator arm to reach [angle_base,angle_boom,angle_stick]
 
 
         # flags
@@ -75,6 +76,15 @@ class ExcavatorMotionPlanning(object):
     def path_planning(self):
         # plan a collision free path
         # the algorithm we will use for path planning hasn't been decided
+
+        # use self variables:
+        # self.bucket_goal (utilize)
+        # self.current_path = [] (modify)
+
+        # use function:
+        # self.check_collision
+
+
         pass
 
 
@@ -87,11 +97,16 @@ class ExcavatorMotionPlanning(object):
     # help functions:
 
     # forward kinematics
-    def forward_kinematics(self):
+    def forward_kinematics(self, joint_coordinates):
+        # input: joint_coordinates [angle_base,angle_boom,angle_stick]
+        # output: a list of cartesian_coordinates [x,y,z]
+        #         [bucket_pt, stick_boom_joint,boom_origin, boom_curve_pt]
         pass
 
     # inverse kinematics
-    def inverse_kinematics(self):
+    def inverse_kinematics(self, cartesian_coordinates):
+        # input: cartesian_coordinates [x,y,z]
+        # output: joint_coordinates [angle_base,angle_boom,angle_stick]
         pass
 
     # check collision
