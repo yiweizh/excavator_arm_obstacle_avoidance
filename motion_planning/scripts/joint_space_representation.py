@@ -14,6 +14,7 @@ class cell(object):
         self.parentid = [] # parent id, in terms of cell coordinate
         self.joint_space_pos = [] # [base_angle,boom_angle,stick_angle]
         self.in_open_list = False
+        self.min_distance_to_obstacle = None
         # add a fheap node, trying to increase speed
         self.node = None
     
@@ -23,6 +24,9 @@ class cell(object):
     def set_collision(self,collision):
         self.collision = collision
     
+    def set_min_distance_to_obstacle(self, min_distance):
+        self.min_distance_to_obstacle = min_distance
+
     def inside_open_list(self):
         return self.in_open_list
         
