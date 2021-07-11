@@ -14,29 +14,30 @@
  打开点云数据，并对点云进行滤波重采样预处理，然后采用平面分割模型对点云进行分割处理
  提取出点云中所有在平面上的点集，并将其存盘
 ******************************************************************************/
+typedef pcl::PointXYZRGB PointT;
 int 
 main (int argc, char** argv)
 {
   // 读取文件
   pcl::PCDReader reader;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr add_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<PointT>::Ptr add_cloud(new pcl::PointCloud<PointT>);
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>), cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<PointT>::Ptr cloud (new pcl::PointCloud<PointT>), cloud_f (new pcl::PointCloud<PointT>);
   reader.read (argv[1], *cloud);
   std::cout << "PointCloud before filtering has: " << cloud->points.size () << " data points." << std::endl; //*
 
   // 下采样，体素叶子大小为0.01
-  pcl::VoxelGrid<pcl::PointXYZ> vg;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::VoxelGrid<PointT> vg;
+  pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>);
   vg.setInputCloud (cloud);
   vg.setLeafSize (0.01f, 0.01f, 0.01f);
   vg.filter (*cloud_filtered);
   std::cout << "PointCloud after filtering has: " << cloud_filtered->points.size ()  << " data points." << std::endl; //*
    //创建平面模型分割的对象并设置参数
-  pcl::SACSegmentation<pcl::PointXYZ> seg;
+  pcl::SACSegmentation<PointT> seg;
   pcl::PointIndices::Ptr inliers (new pcl::PointIndices); //设置聚类的内点索引
   pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);//平面模型的因子
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZ> ());
+  pcl::PointCloud<PointT>::Ptr cloud_plane (new pcl::PointCloud<PointT> ());
   
   pcl::PCDWriter writer;
   seg.setOptimizeCoefficients (true);
@@ -58,7 +59,7 @@ main (int argc, char** argv)
     }
 
    // 从输入的点云中提取平面模型的内点
-    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    pcl::ExtractIndices<PointT> extract;
     extract.setInputCloud (cloud_filtered);
     extract.setIndices (inliers);        //提取内点的索引并存储在其中
     extract.setNegative (false);
@@ -66,7 +67,9 @@ main (int argc, char** argv)
     // 得到与平面表面相关联的点云数据
     extract.filter (*cloud_plane);
     std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points." << std::endl;
-    pcl::io::savePCDFileASCII("cloud_plane.pcd",*cloud_plane);
+    std::stringstream out_name;
+    out_name <<  argv[2];
+    pcl::io::savePCDFileASCII("plane" + out_name.str()+ ".pcd",*cloud_plane);
     //  // 移去平面局内点，提取剩余点云
     extract.setNegative (true);
     extract.filter (*cloud_f);
@@ -74,11 +77,11 @@ main (int argc, char** argv)
   }
 
   // 创建用于提取搜索方法的kdtree树对象
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+  pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
   tree->setInputCloud (cloud_filtered);
 
   std::vector<pcl::PointIndices> cluster_indices;
-  pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;   //欧式聚类对象
+  pcl::EuclideanClusterExtraction<PointT> ec;   //欧式聚类对象
   ec.setClusterTolerance (0.02);                     // 设置近邻搜索的搜索半径为2cm
   ec.setMinClusterSize (100);                 //设置一个聚类需要的最少的点数目为100
   ec.setMaxClusterSize (25000);               //设置一个聚类需要的最大点数目为25000
@@ -89,7 +92,7 @@ main (int argc, char** argv)
   int j = 0;
   for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
   { //迭代容器中的点云的索引，并且分开保存索引的点云
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
     for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
      //设置保存点云的属性问题
     cloud_cluster->points.push_back (cloud_filtered->points[*pit]); //*
@@ -98,15 +101,17 @@ main (int argc, char** argv)
     cloud_cluster->is_dense = true;
 
     std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
-    std::stringstream ss;
-    ss << "cloud_cluster_" << j << ".pcd";
-    writer.write<pcl::PointXYZ> (ss.str (), *cloud_cluster, false); //*
+    // std::stringstream ss;
+    // ss << "cloud_cluster_" << j << ".pcd";
+    // writer.write<pcl::PointT> (ss.str (), *cloud_cluster, false); //*
  
 //————————————以上就是实现所有的聚类的步骤，并且保存了————————————————————————————//
 //以下就是我为了回答网友提问解决可视化除了平面以后的可视化的代码也就两行   
     j++;
     *add_cloud+=*cloud_cluster;
-    pcl::io::savePCDFileASCII("add_cloud.pcd",*add_cloud);
+    std::stringstream out_name;
+    out_name <<  argv[2];
+    pcl::io::savePCDFileASCII("rest"+out_name.str()+".pcd",*add_cloud);
   }
 
   return (0);
