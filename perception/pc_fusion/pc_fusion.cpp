@@ -17,6 +17,10 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <dirent.h>
+#include <string>
+#include <vector>
+using namespace std;
 
 using pcl::visualization::PointCloudColorHandlerGenericField;
 // using pcl::visualization::PointCloudColorHandlerCustom;
@@ -98,8 +102,6 @@ void showClouds(const PointCloud::Ptr cloud_target, const PointCloud::Ptr cloud_
     p->spin();
 }
 
-
-
 /** \brief Display source and target on the second viewport of the visualizer
  *
  */
@@ -130,26 +132,26 @@ void showCloudsRight(const PointCloudWithNormals::Ptr cloud_target, const PointC
   * \param argv the actual command line arguments (pass from main ())
   * \param models the resultant vector of point cloud datasets
   */
-void loadData(int argc, char** argv, std::vector<PCD, Eigen::aligned_allocator<PCD> >& models)
+void loadData(string dir_path, vector<string>& files, std::vector<PCD, Eigen::aligned_allocator<PCD> >& models)
 {
     std::string extension(".pcd");
     // Suppose the first argument is the actual test model
-    for (int i = 1; i < argc; i++)
+    for (int i = 0; i < files.size(); i++)
     {
-        std::string fname = std::string(argv[i]);
+        std::string fname = dir_path + files[i];
         // Needs to be at least 5: .plot
         if (fname.size() <= extension.size())
             continue;
 
-        std::transform(fname.begin(), fname.end(), fname.begin(), (int(*)(int))tolower);
+        // std::transform(fname.begin(), fname.end(), fname.begin(), (int(*)(int))tolower);
 
         //check that the argument is a pcd file
         if (fname.compare(fname.size() - extension.size(), extension.size(), extension) == 0)
         {
             // Load the cloud and saves it into the global list of models
             PCD m;
-            m.f_name = argv[i];
-            pcl::io::loadPCDFile(argv[i], *m.cloud);
+            m.f_name = fname;
+            pcl::io::loadPCDFile(fname, *m.cloud);
             //remove NAN points from the cloud
             std::vector<int> indices;
             pcl::removeNaNFromPointCloud(*m.cloud, *m.cloud, indices);
@@ -393,12 +395,41 @@ void segmentPoint(const PointCloud::Ptr cloud_src, PointCloud::Ptr cloud_p, Poin
     // }
 }
 
+
+
+int endsWith(string s,string sub){
+        return s.rfind(sub)==(s.length()-sub.length())?1:0;
+}
+
 /* ---[ */
 int main(int argc, char** argv)
 {
+    
+    struct dirent *dir_ptr;
+    DIR *dir;
+    // string path = "/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/";
+    string path(argv[1]);
+    dir=opendir(path.c_str());
+    vector<string> files;
+    cout<<"list of files: "<<endl;
+    string extension(".pcd");
+
+    while((dir_ptr =readdir(dir))!=NULL){
+        if(dir_ptr->d_name[0] == '.' || !endsWith(dir_ptr->d_name, extension))
+            //get rid of . and ..
+            continue;
+        files.push_back(dir_ptr->d_name);
+    }
+
+    closedir(dir);
     // Load data
+
     std::vector<PCD, Eigen::aligned_allocator<PCD> > data;
-    loadData(argc, argv, data);
+    sort(files.begin(), files.end());
+    for (int i = 0; i < files.size(); ++i){
+        cout << files[i] <<endl;
+    }
+    loadData(path, files, data);
 
     // Check user input
     if (data.empty())
@@ -441,6 +472,12 @@ int main(int argc, char** argv)
 
         segmentPoint(source, plane_src, rest_src, i);
         segmentPoint(target, plane_tar, rest_tar, i);
+
+        if(i==9){
+            res->removePointCloud("Result");
+            res->addPointCloud(rest_tar, "Result");
+            res->spin();
+        }
         
         showClouds(rest_src, rest_tar, vp_2);
 

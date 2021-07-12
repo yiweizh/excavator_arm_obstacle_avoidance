@@ -11,7 +11,7 @@
             "request": "launch",
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
-            "args": ["/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/Captured_Frame1.pcd", "/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/Captured_Frame2.pcd", "/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/Captured_Frame3.pcd", "/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/Captured_Frame4.pcd", "/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/Captured_Frame5.pcd", "/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/Captured_Frame6.pcd", "/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/Captured_Frame7.pcd"],
+            "args": ["/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
