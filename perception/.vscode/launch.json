@@ -11,7 +11,7 @@
             "request": "launch",
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
-            "args": ["~/VE450/librealsense/save-to-disk/Captured_Frame1.pcd"],
+            "args": ["/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
