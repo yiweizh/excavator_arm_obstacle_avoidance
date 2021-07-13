@@ -50,6 +50,8 @@ class ExcavatorMotionPlanning(object):
         self.curve_dev = 0.2 # unit: m [WARNING: NOT MEASURED YET]
         self.curve_h = 0.13 # unit: m  [WARNING: NOT MEASURED YET]
 
+        self.ep = 0.0000000000001 # floating point precision [USAGE: avoid failures of asin(x)]
+
         # tolerance
         self.middle_target_tolerance = 3 # how much angle difference we can tolerate for a middle target along a path
         self.end_target_tolerance = 1 # how much angle difference we can tolerate for the final target
@@ -84,7 +86,7 @@ class ExcavatorMotionPlanning(object):
         # Interface for users to set the goal for the bucket to reach
         # bucket_goal in the format [x,y,z]
         self.bucket_goal = bucket_goal
-        print("goal: %f, %f, %f"%(bucket_goal[0],bucket_goal[1],bucket_goal[2]))
+        print("goal: %lf, %lf, %lf"%(bucket_goal[0],bucket_goal[1],bucket_goal[2]))
         if self.visualize:
             self.target_visualization.publish([bucket_goal])
 
@@ -463,14 +465,31 @@ class ExcavatorMotionPlanning(object):
         angle_boom = math.asin((z-b)/self.boom_len)
 		
         if (A-2*z*b>0):
-            angle_stick = math.asin(b/self.stick_len)
+            try:
+                angle_stick = math.asin(b/self.stick_len)
+            except ValueError:
+                if (abs(b/self.stick_len - 1.0) < self.ep):
+                    angle_stick = math.asin(1.0)
+                elif (abs(b/self.stick_len + 1.0) < self.ep):
+                    angle_stick = math.asin(-1.0)
+                else:
+                    exit(-1)
+            
         else:
-            angle_stick = -1*math.asin(b/self.stick_len)-math.pi
+            try:
+                angle_stick = -1*math.asin(b/self.stick_len)-math.pi
+            except ValueError:
+                if(abs(b/self.stick_len - 1.0) < self.ep):
+                    angle_stick = -1 * math.asin(1.0) - math.pi
+                elif (abs(b/self.stick_len + 1.0) < self.ep):
+                    angle_stick = -1 * math.asin(-1.0) - math.pi
+                else:
+                    exit(-1)
 		
-        raw_base = angle_base * 180/math.pi
-        raw_boom = angle_boom * 180/math.pi
-        raw_stick = angle_stick * 180/math.pi
-        raw_boom_stick = raw_stick + 180 - raw_boom
+        raw_base = angle_base * 180.0/math.pi
+        raw_boom = angle_boom * 180.0/math.pi
+        raw_stick = angle_stick * 180.0/math.pi
+        raw_boom_stick = raw_stick + 180.0 - raw_boom
         angles.append(raw_base)
         angles.append(raw_boom)
         angles.append(raw_boom_stick)
@@ -519,7 +538,8 @@ if __name__ == '__main__':
     # pts_cartesian = excavator_motion_planning.forward_kinematics(pts_joint_space)
     # print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
 
-    cartesian_target = excavator_motion_planning.forward_kinematics([90,45,50])
+    cartesian_target = excavator_motion_planning.forward_kinematics([90.0,40.0,50.0])
+    print("cartesian target: %f %f %f", cartesian_target[0][0], cartesian_target[0][1], cartesian_target[0][2])
     pts_joint_space = excavator_motion_planning.inverse_kinematics(cartesian_target[0])
     print("ik result: [%f,%f,%f]"%(pts_joint_space[0],pts_joint_space[1],pts_joint_space[2]))
     pts_cartesian = excavator_motion_planning.forward_kinematics(pts_joint_space)
