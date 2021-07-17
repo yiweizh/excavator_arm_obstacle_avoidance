@@ -16,7 +16,7 @@
 
 // Intel Realsense Headers  相机头文件
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
-#include "/home/shijiliu/VE450/librealsense/examples/example.hpp"   
+#include "/home/pyhuang/VE450/librealsense/examples/example.hpp"   
 #include "kbhit.hpp"
 // PCL Headers  PCL头文件
 #include <pcl/io/pcd_io.h>
