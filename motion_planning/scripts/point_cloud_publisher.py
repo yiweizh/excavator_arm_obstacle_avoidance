@@ -5,7 +5,7 @@
 import rospy
 import numpy as np
 import rospkg
-
+import ctypes
 
 import struct
 
@@ -175,6 +175,28 @@ def decode_rgb_from_pcl(rgb):
 
     return rgb_arr
 
+
+def float_to_rgb(float_rgb):
+    """ Converts a packed float RGB format to an RGB list
+
+        Args:
+            float_rgb: RGB value packed as a float
+
+        Returns:
+            color (list): 3-element list of integers [0-255,0-255,0-255]
+    """
+    s = struct.pack('>f', float_rgb)
+    i = struct.unpack('>l', s)[0]
+    pack = ctypes.c_uint32(i).value
+
+    r = (pack & 0x00FF0000) >> 16
+    g = (pack & 0x0000FF00) >> 8
+    b = (pack & 0x000000FF)
+
+    color = [r,g,b]
+
+    return color
+
 def load_pcd_to_ndarray(pcd_path):
     with open(pcd_path) as f:
         while True:
@@ -185,12 +207,13 @@ def load_pcd_to_ndarray(pcd_path):
         points = np.loadtxt(f)
         new_pts = []
         pt_color = [] # store the rgb color of a given point
+        rbg_list = []
         for pt in points:
             if not (pt[0] == 0 and pt[1] == 0 and pt[2] == 0):
                 new_pts.append(np.array([pt[0],pt[1],pt[2],1]))
-                #rgb_arr = decode_rgb_from_pcl(pt[3])
-                #pt_color.append(rgb_arr)
-                pt_color.append(pt[3])
+                rgb_arr = float_to_rgb(pt[3])
+                rbg_list.append(rgb_arr)
+                #pt_color.append(pt[3])
 
         # apply coordinate transformation, change points from camera coordinate to robot_camera_coordinate
 
@@ -202,7 +225,7 @@ def load_pcd_to_ndarray(pcd_path):
         # return ret_val
 
         # decode rgb
-        rbg_list = decode_rgb_from_pcl(np.array(pt_color))
+        #rbg_list = decode_rgb_from_pcl(np.array(pt_color))
 
 
         return transformed_pts, rbg_list
@@ -254,7 +277,7 @@ if __name__ == '__main__':
 
 
     rospack = rospkg.RosPack()
-    directory = rospack.get_path('motion_planning') + '/scripts/captured_pointclouds/'
+    directory = rospack.get_path('motion_planning') + '/scripts/head_set/'
 
     # load in 14 captured frames, try to transform them into global frame
     global_data_list = []
@@ -268,7 +291,7 @@ if __name__ == '__main__':
         global_data = local2global(local_data,90 - servo_angle[ii - 1],20,np.array([0.06,0,0]))
 
         global_data_list += (global_data.T)[:,0:3].tolist()
-        color_list += pt_color.tolist()
+        color_list += pt_color
     
     # local_data = load_pcd_to_ndarray(directory + 'Captured_Frame' + '07' + '.pcd')
     # global_data = local2global(local_data,0,0)
@@ -281,6 +304,6 @@ if __name__ == '__main__':
         # if counter >= num_of_pts:
         #     break
 
-        point_cloud_publisher.publish(data)
-        #point_cloud_publisher.publish_rgb(data,color_list)
+        #point_cloud_publisher.publish(data)
+        point_cloud_publisher.publish_rgb(data,color_list)
         rospy.sleep(0.1)
