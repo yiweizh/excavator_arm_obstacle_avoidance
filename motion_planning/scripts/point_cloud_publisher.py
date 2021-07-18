@@ -258,6 +258,13 @@ def local2global(pts, z_angle, incline_angle,translation_vec = np.array([0,0,0])
 
     return new_pts
 
+def load_extracted_pointclouds(filename = 'xyztgba.txt'):
+    array = np.loadtxt(filename)
+    data_3D = array[:,0:3].tolist()
+    color_list = array[:,3:6].tolist()
+    return data_3D, color_list
+
+
 if __name__ == '__main__':
     rospy.init_node('PointCloudPublisher', anonymous=True)
 
@@ -277,7 +284,7 @@ if __name__ == '__main__':
 
 
     rospack = rospkg.RosPack()
-    directory = rospack.get_path('motion_planning') + '/scripts/head_set/'
+    directory = rospack.get_path('motion_planning') + '/scripts/captured_pointclouds/'
 
     # load in 14 captured frames, try to transform them into global frame
     global_data_list = []
@@ -293,11 +300,14 @@ if __name__ == '__main__':
         global_data_list += (global_data.T)[:,0:3].tolist()
         color_list += pt_color
     
-    # local_data = load_pcd_to_ndarray(directory + 'Captured_Frame' + '07' + '.pcd')
-    # global_data = local2global(local_data,0,0)
-    # global_data_list += (global_data.T)[:,0:3].tolist()
+    local_data = load_pcd_to_ndarray(directory + 'Captured_Frame' + '07' + '.pcd')
+    global_data = local2global(local_data,0,0)
+    global_data_list += (global_data.T)[:,0:3].tolist()
 
     data = global_data_list #+ data0
+
+    #data, color_list = load_extracted_pointclouds(rospack.get_path('motion_planning') + '/scripts/pointcloud_xyzrgba.txt')
+
     while not rospy.is_shutdown():
         # data.append([counter,counter,counter])
         # counter += 1

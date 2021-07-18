@@ -386,12 +386,12 @@ class ExcavatorMotionPlanning(object):
         
         # Exctract the three angles
         raw_base, raw_boom, raw_boom_stick = joint_coordinates
-        raw_stick = raw_boom + raw_boom_stick - 180
+        raw_stick = raw_boom + raw_boom_stick - 180.0
 
 
-        angle_base = raw_base * math.pi/180
-        angle_stick = raw_stick * math.pi/180
-        angle_boom = raw_boom * math.pi/180
+        angle_base = raw_base * math.pi/180.0
+        angle_stick = raw_stick * math.pi/180.0
+        angle_boom = raw_boom * math.pi/180.0
         
         # Determine height of the points
         stick_boom_joint_h = self.boom_len * math.sin(angle_boom)
@@ -538,7 +538,7 @@ if __name__ == '__main__':
     # pts_cartesian = excavator_motion_planning.forward_kinematics(pts_joint_space)
     # print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
 
-    cartesian_target = excavator_motion_planning.forward_kinematics([90.0,40.0,50.0])
+    cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,40.0,50.0])
     print("cartesian target: %f %f %f", cartesian_target[0][0], cartesian_target[0][1], cartesian_target[0][2])
     pts_joint_space = excavator_motion_planning.inverse_kinematics(cartesian_target[0])
     print("ik result: [%f,%f,%f]"%(pts_joint_space[0],pts_joint_space[1],pts_joint_space[2]))

@@ -19,7 +19,7 @@ def talker():
     #ser = serial.Serial(port='/dev/ttyUSB0',baudrate=9600)
     left_top = excavator_angles()
 
-    s = serial.Serial(port='/dev/ttyACM0',baudrate=9600)
+    s = serial.Serial(port='/dev/ttyUSB0',baudrate=9600)
     
     while not rospy.is_shutdown():
         s.flushInput()

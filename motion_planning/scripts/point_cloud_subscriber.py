@@ -29,6 +29,32 @@ class PointCloudSubscriber(object):
         
         return xyz_pts
 
+
+    def get_pointcloud_with_color(self, x_lower, x_upper, y_lower, y_upper, z_lower, z_upper):
+        gen = point_cloud2.read_points(self.obstacle_pointcloud, field_names=("x", "y", "z","rgba"), skip_nans=True)
+        
+        pointcloud_pt_rgba = []
+        
+        for pt in gen:
+            if pt[0] >= x_lower and pt[0] <= x_upper and pt[1] >= y_lower and pt[1] <= y_upper and pt[2] >= z_lower and pt[2] <= z_upper:
+                r,g,b,a = self.hex2rgba(pt[3])
+                pointcloud_pt_rgba.append([pt[0],pt[1],pt[2],r,g,b,a])
+
+        return pointcloud_pt_rgba
+
+    def hex2rgba(self,rgba):
+        b = rgba % 256
+        
+        rgba /= 256
+        g = rgba % 256
+        rgba /= 256
+        r = rgba % 256
+
+        a = rgba / 256
+
+        return r,g,b,a
+
+
     def pcl_callback(self,data):
         self.obstacle_pointcloud = data
 

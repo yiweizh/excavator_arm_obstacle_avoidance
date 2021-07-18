@@ -8,7 +8,7 @@ from motion_planning.msg import excavator_control_signals # msg type for publish
 from angle_subscriber import AngleSubscriber # get target excavator joint angles
 
 
-def ExcavatorArmControl(boom_target,stick_target,boom_measured,stick_measured, tolerance = 2):
+def ExcavatorArmControl(boom_target,stick_target,boom_measured,stick_measured, tolerance = 5.0):
     # given the target boom, stick angle and the measured boom, stick angle
     # calculate desired stick servo angle, boom servo angle and pump mode
     # return [boom_servo, stick_servo, pump_mode]
@@ -25,9 +25,9 @@ def ExcavatorArmControl(boom_target,stick_target,boom_measured,stick_measured, t
         # angle difference larger than tolerance
         # check whether we need to increase or decrease angle
         if boom_target > boom_measured: # increase angle
-            boom_servo = 135
+            boom_servo = 125 # 135
         else:
-            boom_servo = 45
+            boom_servo = 55 # 45
         temp_boom_moving = True
         pump_mode = 1 # normal opening
 
@@ -35,10 +35,10 @@ def ExcavatorArmControl(boom_target,stick_target,boom_measured,stick_measured, t
         # angle difference larger than tolerance
         # check whether we need to increase or decrease angle
         if stick_target > stick_measured:
-            stick_servo = 135
+            stick_servo = 125 #135
             pump_mode = 2 # increase stick angle, the motor may get stuck
         else:
-            stick_servo = 45
+            stick_servo = 55
             pump_mode = 1 # normal pump opening
         
     
@@ -57,7 +57,7 @@ class BaseControlPID(object):
         self.u0 = 0
         
         #PID constants
-        Kp = 1.0
+        Kp = 4.0
         Ki = 0.0
         Kd = 0.0
 
@@ -77,10 +77,10 @@ class BaseControlPID(object):
         self.ke1 = self.b1 / self.a0
         self.ke2 = self.b2 / self.a0
 
-        self.max_pwm = 10
-        self.min_pwm = 2
+        self.max_pwm = 40
+        self.min_pwm = 30
 
-    def update(self, target_angle, measured_angle, tolerance = 2.0):
+    def update(self, target_angle, measured_angle, tolerance = 4.0):
         angle_diff = target_angle - measured_angle
 
         if(abs(angle_diff) <= tolerance):
@@ -150,8 +150,10 @@ def SimpleController():
         control_signals.pump_mode = ret_val[2]
 
         # calculate excavator base control values
-    
-        control_signals.base_pwm = base_control_pid.update(base_target,base_measured)
+        if control_signals.pump_mode == 0:
+            control_signals.base_pwm = base_control_pid.update(base_target,base_measured)
+        else:
+            control_signals.base_pwm = 0
         
 
         

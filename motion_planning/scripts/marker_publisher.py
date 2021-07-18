@@ -64,20 +64,33 @@ class MarkerPublisher(object):
 if __name__ == '__main__':
     rospy.init_node('MarkerPublisher', anonymous=True)
 
-    marker_publisher = MarkerPublisher(type = 0)
+    marker_publisher0 = MarkerPublisher(topic = 'obstacle_0',type = 1,id = 0,scale = 0.1)
+    marker_publisher1 = MarkerPublisher(topic = 'obstacle_1',type = 1,id = 1,scale = 0.1)
+    marker_publisher2 = MarkerPublisher(topic = 'obstacle_2',type = 1,id = 2,scale = 0.1)
+    marker_publisher3 = MarkerPublisher(topic = 'obstacle_3',type = 1,id = 3,scale = 0.1)
 
-    data = np.array([[0,0,0],[1,1,1],[2,2,2],[2,2,4],[2,4,4],[4,4,4]])
-    counter = 0
-    num_of_pts = 100
+    # data = np.array([[0,0,0],[1,1,1],[2,2,2],[2,2,4],[2,4,4],[4,4,4]])
+    # counter = 0
+    # num_of_pts = 100
+
+    data0 = np.array([[0.2,0.7,0.0],[0.2,0.5,0.0],[0.2,0.5,0.4],[0.2,0.7,0.4],[0.2,0.7,0.0]])
+
+    data1 = np.array([[0.2,0.3,0.8],[0.2,0.1,0.8],[0.2,0.1,0.4],[0.2,0.3,0.4],[0.2,0.3,0.8]])
+
+    data2 = np.array([[0.2,-0.1,0.8],[0.2,-0.3,0.8],[0.2,-0.3,0.4],[0.2,-0.1,0.4],[0.2,-0.1,0.8]])
+
+    data3 = np.array([[0.2,-0.7,0.0],[0.2,-0.5,0.0],[0.2,-0.5,0.4],[0.2,-0.7,0.4],[0.2,-0.7,0.0]])
 
 
     while not rospy.is_shutdown():
 
-        counter += 1
-        if counter >= num_of_pts:
-            break
+        # counter += 1
+        # if counter >= num_of_pts:
+        #     break
 
-        data += 1
-
-        marker_publisher.publish(data)
+        
+        marker_publisher0.publish(data0)
+        marker_publisher1.publish(data1)
+        marker_publisher2.publish(data2)
+        marker_publisher3.publish(data3)
         rospy.sleep(0.1)
