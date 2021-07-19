@@ -33,33 +33,34 @@ TX <---> 0(Rx)
  
  static bool location; // 0: RHP; 1: LHP
  void read_stick();
- void read_boom_base();
- float real_base_angle(float raw_base_angle);
+ void read_boom();
+ void read_base();
+//float real_base_angle(float raw_base_angle);
 //Set up all the serials
 void setup() 
 {
   Serial.begin(9600);
   serial0.begin(9600);
-  JY901_0.StartIIC();
-  
-  JY901_0.GetAngle();
-  base_init = (float)JY901_0.stcAngle.Angle[2]/32768*180;
+  JY901_0.StartIIC(0x10);
+  JY901_2.StartIIC();
+//  JY901_0.GetAngle();
+//  base_init = (float)JY901_0.stcAngle.Angle[2]/32768*180;
 }
 
 void loop() 
 {
 
     //Read the new data in and process the corresponding data
-    read_boom_base();
+    read_boom();
     read_stick();
+    read_base();
 
     stick_angle = (location == 0)? raw_stick_angle : (-180-raw_stick_angle);
-    base_angle = real_base_angle(raw_base_angle);
+    //base_angle = real_base_angle(raw_base_angle);
     
       
     //print received data. Data was received in serialEvent;
     Serial.print(stick_angle);
-    Serial.print(',');
     Serial.print(',');
     Serial.print(boom_angle);
     Serial.print(',');
@@ -69,9 +70,13 @@ void loop()
     Serial.print(boom_stick_angle);
     Serial.print(',');
 
-    Serial.print(base_angle);
-      
-      
+    //Serial.print(base_angle);
+    Serial.print(raw_base_angle);
+//    Serial.print(',');
+//
+//    Serial.print(base_init);
+//    Serial.print(',');
+//    Serial.print(raw_base_angle);
     Serial.println("");
     
     delay(10);
@@ -85,25 +90,26 @@ void read_stick(){
   }
   raw_stick_angle = -((float)JY901_1.stcAngle.Angle[1]/32768*180);
   location = ((float)JY901_1.stcAngle.Angle[0] < 0 )? 1:0;
-  
 }
-
-void read_boom_base(){
+void read_base(){
+  JY901_2.GetAngle();
+  raw_base_angle = ((float)JY901_2.stcAngle.Angle[2]/32768*180);
+}
+void read_boom(){
  JY901_0.GetAngle();
  boom_angle = ((float)JY901_0.stcAngle.Angle[1]/32768*180);
- raw_base_angle = ((float)JY901_0.stcAngle.Angle[2]/32768*180);
 }
-
-float real_base_angle(float raw_base_angle){
-  float result = raw_base_angle - base_init;
-  if(base_init < -90 && raw_base_angle >= 0){
-    result = -360-base_init+raw_base_angle;// -180-base_init-(180-raw_base_angle)
-  }
-  else if (base_init > 90 && raw_base_angle <0){
-    result = 360-base_init + raw_base_angle;//180-base_init + raw_base_angle+180;
-  }
-  return result;
-}
+//
+//float real_base_angle(float raw_base_angle){
+//  float result = raw_base_angle - base_init;
+//  if(base_init < -90 && raw_base_angle >= 0){
+//    result = -360-base_init+raw_base_angle;// -180-base_init-(180-raw_base_angle)
+//  }
+//  else if (base_init > 90 && raw_base_angle <0){
+//    result = 360-base_init + raw_base_angle;//180-base_init + raw_base_angle+180;
+//  }
+//  return result;
+//}
 /*
   SerialEvent occurs whenever a new data comes in the
  {\bf hardware serial RX}.  This routine is run between each
