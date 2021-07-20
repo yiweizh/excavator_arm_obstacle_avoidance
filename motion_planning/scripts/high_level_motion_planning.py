@@ -41,20 +41,27 @@ class ExcavatorMotionPlanning(object):
         self.measured_angle_subscriber = AngleSubscriber(topic = 'measured_angles') # subscriber for excavator angles, will be used for selecting target
         self.obstacle_subscriber = PointCloudSubscriber("Obstacle_pointcloud") # subscriber for obstacles
 
+        # target msg we will publish
+        self.next_target_set = excavator_angles()
+
+
         # set constants
         self.collision_distance = 0.1 # unit: m
         self.close_distance = 0.3 # unit: m
         self.boom_len = 0.482 # unit: m
         self.stick_len = 0.255 # unit: m
         self.boom_origin_dev = 0.04 # unit: m [WARNING: NOT MEASURED YET]
-        self.curve_dev = 0.2 # unit: m [WARNING: NOT MEASURED YET]
-        self.curve_h = 0.13 # unit: m  [WARNING: NOT MEASURED YET]
+        self.curve_dev = 0.19 # unit: m [WARNING: NOT MEASURED YET]
+        self.curve_h = 0.11 # unit: m  [WARNING: NOT MEASURED YET]
 
         self.ep = 0.0000000000001 # floating point precision [USAGE: avoid failures of asin(x)]
 
         # tolerance
-        self.middle_target_tolerance = 3 # how much angle difference we can tolerate for a middle target along a path
-        self.end_target_tolerance = 1 # how much angle difference we can tolerate for the final target
+        #self.middle_target_tolerance = 3 # how much angle difference we can tolerate for a middle target along a path
+        #self.end_target_tolerance = 1 # how much angle difference we can tolerate for the final target
+        self.stick_tolerance = 5 # allowed angle tolerance for stick joint
+        self.boom_tolerance = 5 # allowed angle tolerance for boom
+        self.base_tolerance = 4 # allowed angle tolerance for base
 
         # bounds and counters for re-planning
         self.replanning_bound = 20 # how much time we should re-plan our path
@@ -70,6 +77,7 @@ class ExcavatorMotionPlanning(object):
 
         # flags
         self.visualize = True # whether visualize data or not
+        self.reached_target = False # whether the target has been reached or not
 
         # instances for visualization
         self.excavator_pts_visualization = MarkerPublisher(topic = '/excavator_arm_pts', type = 1,id = 0,color = 'b',scale = 0.1) # publisher for pts on the excavator
@@ -86,6 +94,7 @@ class ExcavatorMotionPlanning(object):
         # Interface for users to set the goal for the bucket to reach
         # bucket_goal in the format [x,y,z]
         self.bucket_goal = bucket_goal
+        self.reached_target = False
         print("goal: %lf, %lf, %lf"%(bucket_goal[0],bucket_goal[1],bucket_goal[2]))
         if self.visualize:
             self.target_visualization.publish([bucket_goal])
@@ -355,12 +364,36 @@ class ExcavatorMotionPlanning(object):
         pts = self.forward_kinematics(current_joint_coordinate)
         #print(pts)
         #print(current_joint_coordinate)
-        if self.collision_free_path == [] or self.replanning_counter >= self.replanning_bound:
-            self.path_planning()
-            self.replanning_counter = 0
+        if self.collision_free_path == []: #or self.replanning_counter >= self.replanning_bound:
+            if not self.reached_target:
+                self.path_planning()
+                self.replanning_counter = 0
         else:
             # select next target
-            pass
+
+            # currently, assign the next target to be the first element in the collision_free_path
+            
+            next_target = self.collision_free_path[0]
+
+            # check whether the target has been reached
+            if abs(next_target[0] - current_joint_coordinate[0]) < self.base_tolerance \
+                and abs(next_target[1] - current_joint_coordinate[1]) < self.boom_tolerance\
+                    and abs(next_target[2] - current_joint_coordinate[2]) < self.stick_tolerance:
+
+                # pop the first element from list
+                del self.collision_free_path[0]
+                if self.collision_free_path != []:
+                    next_target = self.collision_free_path[0]
+                    self.reached_target = True
+
+
+            # publish next target
+            self.next_target_set.angle_base = next_target[0]
+            self.next_target_set.angle_boom = next_target[1]
+            self.next_target_set.angle_stick = next_target[2]
+
+            self.target_publisher.publish(self.next_target_set)
+
 
         self.replanning_counter += 1
         if self.visualize:
@@ -538,7 +571,7 @@ if __name__ == '__main__':
     # pts_cartesian = excavator_motion_planning.forward_kinematics(pts_joint_space)
     # print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
 
-    cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,40.0,50.0])
+    cartesian_target = excavator_motion_planning.forward_kinematics([90.0,40.0,50.0])
     print("cartesian target: %f %f %f", cartesian_target[0][0], cartesian_target[0][1], cartesian_target[0][2])
     pts_joint_space = excavator_motion_planning.inverse_kinematics(cartesian_target[0])
     print("ik result: [%f,%f,%f]"%(pts_joint_space[0],pts_joint_space[1],pts_joint_space[2]))
