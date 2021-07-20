@@ -107,7 +107,7 @@ def segmentRed(hsv_img):
     return mask
 
 if __name__ == '__main__':
-    pcd_path = "/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/src/motion_planning/scripts/pointcloud_xyzrgba.txt"
+    pcd_path = '/home/pyhuang/excavator_arm_obstacle_avoidance/motion_planning/scripts/pointcloud_xyzrgba.txt'
     rbg_list = load_color_to_ndarray(pcd_path)
     for i in range(0, 530000 - len(rbg_list)):
         rbg_list.append([0, 0, 0])
@@ -119,7 +119,8 @@ if __name__ == '__main__':
     rbg_list = rbg_list.reshape((1, rbg_list.shape[0], 3))
     hsv_img = cv2.cvtColor(rbg_list, cv2.COLOR_RGB2HSV)
     mask = segmentRed(hsv_img)
-    mask = mask.reshape((530, 1000))
+    # mask = mask.reshape((530, 1000))
+    binary_mask = np.where(mask==255)
     fig, axs = plt.subplots(2)
     axs[0].imshow(red_colors)
     axs[1].imshow(mask, cmap='gray', vmin=0, vmax=255)
@@ -131,10 +132,11 @@ if __name__ == '__main__':
     #     for y in range(red_colors.shape[1]):
     #         r, g, b = red_colors[x, y]
     #         h, s, v = rgb2hsv(r, g, b)
+    #         mask[x, y, :] = 0
     #         if 0 < h < 10 or 156 < h < 180:
-    #             mask[x, y, :] = 255
-    #         else:
-    #             mask[x, y, :] = 0
+    #             if 43 < s < 255:
+    #                 if 46 < v < 255:
+    #                     mask[x, y, :] = 255
     # fig, axs = plt.subplots(2)
     # axs[0].imshow(red_colors)
     # axs[1].imshow(mask, cmap='gray', vmin=0, vmax=255)
