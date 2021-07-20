@@ -258,6 +258,42 @@ def local2global(pts, z_angle, incline_angle,translation_vec = np.array([0,0,0])
 
     return new_pts
 
+def camera_global_to_rotation_center(camera_global_coordinates):
+    # input: 
+    # camera_global_coordinates, an array of (#,3), or[[x,y,z],[x1,y1,z1]...]
+
+    x_diff = 0.048
+    y_diff = 0.06
+    z_diff = 0.215
+
+    global_coordinates = np.array(camera_global_coordinates)
+
+    global_coordinates += np.array([x_diff,y_diff,z_diff])
+    return global_coordinates
+
+
+def remove_excavator_pts(global_coordinates, color_lists):
+    # apply some kinds of algorithm to remove excavator arm points from the point clouds
+    # currently apply a bounding box created by hand to remove those points
+    # not the best practice
+    x_lower = 0.26
+    y_lower = -0.14
+    z_lower = -0.18
+    x_upper = x_lower + 0.7
+    y_upper = y_lower + 0.32
+    z_upper = z_lower + 0.38
+    global_data_list = []
+    new_color_list = []
+    for pt, color in zip(global_coordinates, color_lists):
+        if not (pt[0] >= x_lower and pt[0] <= x_upper and pt[1] >= y_lower and pt[1] <= y_upper and pt[2] >= z_lower and pt[2] <= z_upper):
+            global_data_list.append([pt[0],pt[1],pt[2]])
+            new_color_list.append(color)
+
+
+    return global_data_list, new_color_list
+
+
+
 def load_extracted_pointclouds(filename = 'xyztgba.txt'):
     array = np.loadtxt(filename)
     data_3D = array[:,0:3].tolist()
@@ -275,16 +311,18 @@ if __name__ == '__main__':
     # data2 = generate_pts_from_bounding_box([0.2,-0.4,0.4],[0.1,0.15,0.4],10)
     # data3 = generate_pts_from_bounding_box([0.2,-0.7,0.0],[0.1,0.15,0.4],10)
     # data5 = generate_pts_from_bounding_box([0.2,-0.4,0.5],[0.1,0.15,0.4],10)
+    # data6 = generate_pts_from_bounding_box([0.2,0.2,0.5],[0.1,0.15,0.4],10)
     # counter = 0
     # num_of_pts = 500
-    #data = data0 + data1 + data2 + data3
-    #data = data0 + data1 + data3 + data5
-    #data = data0  + data3
-    #data = data3
+    # data = data0 + data1 + data2 + data3
+    # data = data0 + data1 + data3 + data5
+    # data = data0  + data3
+    # data = data3
+    # data = data0 + data6 + data3 + data5
 
 
     rospack = rospkg.RosPack()
-    directory = rospack.get_path('motion_planning') + '/scripts/captured_pointclouds/'
+    directory = rospack.get_path('motion_planning') + '/scripts/test_oil/'
 
     # load in 14 captured frames, try to transform them into global frame
     global_data_list = []
@@ -295,16 +333,22 @@ if __name__ == '__main__':
     for ii in range(1,15):
         local_data, pt_color = load_pcd_to_ndarray(directory + 'Captured_Frame' + format(ii,'02') + '.pcd')
 
-        global_data = local2global(local_data,90 - servo_angle[ii - 1],20,np.array([0.06,0,0]))
+        global_data = local2global(local_data,90 - servo_angle[ii - 1],30,np.array([0.06,0,0]))
 
         global_data_list += (global_data.T)[:,0:3].tolist()
         color_list += pt_color
     
-    local_data = load_pcd_to_ndarray(directory + 'Captured_Frame' + '07' + '.pcd')
-    global_data = local2global(local_data,0,0)
-    global_data_list += (global_data.T)[:,0:3].tolist()
+    # local_data = load_pcd_to_ndarray(directory + 'Captured_Frame' + '07' + '.pcd')
+    # global_data = local2global(local_data,0,0)
+    # global_data_list += (global_data.T)[:,0:3].tolist()
 
-    data = global_data_list #+ data0
+    #data = global_data_list #+ data0 
+
+    # change point cloud coordinates from centered at camera coordinate center to the rotation center
+
+    global_data_list = camera_global_to_rotation_center(global_data_list)
+    global_data_list, color_list = remove_excavator_pts(global_data_list,color_list)
+    data = global_data_list
 
     #data, color_list = load_extracted_pointclouds(rospack.get_path('motion_planning') + '/scripts/pointcloud_xyzrgba.txt')
 
@@ -314,6 +358,6 @@ if __name__ == '__main__':
         # if counter >= num_of_pts:
         #     break
 
-        #point_cloud_publisher.publish(data)
+        # point_cloud_publisher.publish(data)
         point_cloud_publisher.publish_rgb(data,color_list)
         rospy.sleep(0.1)

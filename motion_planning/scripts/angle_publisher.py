@@ -14,7 +14,7 @@ import serial
 def talker():
     pub_p = rospy.Publisher('measured_angles', excavator_angles, queue_size=1)
     rospy.init_node('measured_angles', anonymous=True)
-    rate = rospy.Rate(10) # 10hz
+    rate = rospy.Rate(50) # 50hz
 
     #ser = serial.Serial(port='/dev/ttyUSB0',baudrate=9600)
     left_top = excavator_angles()
@@ -29,9 +29,9 @@ def talker():
             data = raw_data.split(',')
             #print(data)
 
-            left_top.angle_stick = float(data[3])
-            left_top.angle_boom = float(data[2])
-            left_top.angle_base = float(data[4].split('\r')[0])         
+            left_top.angle_stick = float(data[2])
+            left_top.angle_boom = float(data[1])
+            left_top.angle_base = float(data[3].split('\r')[0])         
 
                 
                 
@@ -40,7 +40,7 @@ def talker():
 
         print("%f,%f,%f"%(left_top.angle_stick,left_top.angle_boom,left_top.angle_base))
         pub_p.publish(left_top)
-        rate.sleep()
+        #rate.sleep()
  
 if __name__ == '__main__':
     try:

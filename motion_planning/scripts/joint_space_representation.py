@@ -161,19 +161,19 @@ class JointSpace(object):
         current_coordinates = self.get_cell_index(joint_coordinate)
 
         # +/- base neighbor
-        # if current_coordinates[0] > 0:
+        if current_coordinates[0] > 0:
             # append joint space coordinates to valid neighbor list and set parent if no collision detected
-        if (self.joint_space[current_coordinates[0] - 1][current_coordinates[1]][current_coordinates[2]].has_collided() != 1):
-            neighbors.append(self.joint_space[current_coordinates[0] - 1][current_coordinates[1]][current_coordinates[2]].get_joint_space_pos())
+            if (self.joint_space[current_coordinates[0] - 1][current_coordinates[1]][current_coordinates[2]].has_collided() != 1):
+                neighbors.append(self.joint_space[current_coordinates[0] - 1][current_coordinates[1]][current_coordinates[2]].get_joint_space_pos())
 
         if current_coordinates[0] < len(self.joint_space) - 1:
             # append joint space coordinates to valid neighbor list and set parent if no collision detected
             if (self.joint_space[current_coordinates[0] + 1][current_coordinates[1]][current_coordinates[2]].has_collided() != 1):
                 neighbors.append(self.joint_space[current_coordinates[0] + 1][current_coordinates[1]][current_coordinates[2]].get_joint_space_pos())
-        elif current_coordinates[0] == len(self.joint_space) - 1:
-            # append joint space coordinates to valid neighbor list and set parent if no collision detected
-            if (self.joint_space[0][current_coordinates[1]][current_coordinates[2]].has_collided() != 1):
-                neighbors.append(self.joint_space[0][current_coordinates[1]][current_coordinates[2]].get_joint_space_pos())
+        # elif current_coordinates[0] == len(self.joint_space) - 1:
+        #     # append joint space coordinates to valid neighbor list and set parent if no collision detected
+        #     if (self.joint_space[0][current_coordinates[1]][current_coordinates[2]].has_collided() != 1):
+        #         neighbors.append(self.joint_space[0][current_coordinates[1]][current_coordinates[2]].get_joint_space_pos())
 
         # +/- boom neighbor
         if current_coordinates[1] > 0:
