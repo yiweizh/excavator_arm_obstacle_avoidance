@@ -77,7 +77,7 @@ class JointSpace(object):
         self.max_base_angle = 180   # max base angle, unit: deg.
         self.min_boom_angle = 0     # min boom angle, unit: deg.
         self.max_boom_angle = 50    # max boom angle, unit: deg.
-        self.min_stick_angle = 30   # min stick angle, unit: deg.
+        self.min_stick_angle = 15   # min stick angle, unit: deg.
         self.max_stick_angle = 150  # max stick angle, unit: deg.
         
 

@@ -74,6 +74,8 @@ class ExcavatorMotionPlanning(object):
 
         self.obstacle_tree = []
 
+        self.previous_stick = None # previous stick angle
+
 
         # flags
         self.visualize = True # whether visualize data or not
@@ -163,6 +165,7 @@ class ExcavatorMotionPlanning(object):
         current_joint_coordinate = self.measured_angle_subscriber.get_angles()
         print("Measured joint angles:")
         print(current_joint_coordinate)
+        self.previous_stick = current_joint_coordinate[2]
 
         if current_joint_coordinate[0] == 0 and current_joint_coordinate[1] == 0 and current_joint_coordinate[2] == 0:
             return
@@ -361,9 +364,14 @@ class ExcavatorMotionPlanning(object):
         # based on the planned path, select the next target and publish the target
         # call re-planning if necessary
         current_joint_coordinate = self.measured_angle_subscriber.get_angles()
-        pts = self.forward_kinematics(current_joint_coordinate)
+        #pts = self.forward_kinematics(current_joint_coordinate)
         #print(pts)
         #print(current_joint_coordinate)
+
+        
+
+
+
         if self.collision_free_path == []: #or self.replanning_counter >= self.replanning_bound:
             if not self.reached_target:
                 self.path_planning()
@@ -374,7 +382,9 @@ class ExcavatorMotionPlanning(object):
             # currently, assign the next target to be the first element in the collision_free_path
             
             next_target = self.collision_free_path[0]
-
+            print("---")
+            print("previous stick: %f, current stick: %f, target stick: %f"%(self.previous_stick,current_joint_coordinate[2],next_target[2]))
+            print("base_error = %f, base_tolerance = %f, boom_error = %f, boom_tolerance = %f"%(abs(next_target[0] - current_joint_coordinate[0]),self.base_tolerance,abs(next_target[1] - current_joint_coordinate[1]),self.boom_tolerance))
             # check whether the target has been reached
             if abs(next_target[0] - current_joint_coordinate[0]) < self.base_tolerance \
                 and abs(next_target[1] - current_joint_coordinate[1]) < self.boom_tolerance\
@@ -384,7 +394,32 @@ class ExcavatorMotionPlanning(object):
                 del self.collision_free_path[0]
                 if self.collision_free_path != []:
                     next_target = self.collision_free_path[0]
+                else:
                     self.reached_target = True
+
+
+            # the target has been reached and then go through (special case for stick angle between 40 and 60)
+
+
+            
+
+            # elif abs(next_target[0] - current_joint_coordinate[0]) < self.base_tolerance \
+            #     and abs(next_target[1] - current_joint_coordinate[1]) < self.boom_tolerance\
+            #         and not abs(next_target[2] - current_joint_coordinate[2]) < self.stick_tolerance:
+            elif abs(next_target[1] - current_joint_coordinate[1]) < self.boom_tolerance\
+                and not abs(next_target[2] - current_joint_coordinate[2]) < self.stick_tolerance:
+                # check the current stick angle and previous stick angle
+                if (next_target[2] - current_joint_coordinate[2]) * (next_target[2] - self.previous_stick) < 0:
+
+                    print("skip a stick target!")
+
+                    # sign changed, change target
+                    # pop the first element from list
+                    del self.collision_free_path[0]
+                    if self.collision_free_path != []:
+                        next_target = self.collision_free_path[0]
+                    else:
+                        self.reached_target = True
 
 
             # publish next target
@@ -394,6 +429,7 @@ class ExcavatorMotionPlanning(object):
 
             self.target_publisher.publish(self.next_target_set)
 
+        self.previous_stick = current_joint_coordinate[2]
 
         self.replanning_counter += 1
         if self.visualize:
@@ -571,7 +607,10 @@ if __name__ == '__main__':
     # pts_cartesian = excavator_motion_planning.forward_kinematics(pts_joint_space)
     # print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
 
-    cartesian_target = excavator_motion_planning.forward_kinematics([90.0,40.0,50.0])
+    # cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,40.0,50.0])
+    cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,49.0,120.0])
+    # cartesian_target = excavator_motion_planning.forward_kinematics([0.0,20.0,21.0])
+    # cartesian_target = excavator_motion_planning.forward_kinematics([90.0,20.0,21.0])
     print("cartesian target: %f %f %f", cartesian_target[0][0], cartesian_target[0][1], cartesian_target[0][2])
     pts_joint_space = excavator_motion_planning.inverse_kinematics(cartesian_target[0])
     print("ik result: [%f,%f,%f]"%(pts_joint_space[0],pts_joint_space[1],pts_joint_space[2]))
