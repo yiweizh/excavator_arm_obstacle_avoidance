@@ -106,25 +106,81 @@ def segmentRed(hsv_img):
     mask = mask1 + mask2
     return mask
 
+def segmentArm(hsv_img, lower, upper):
+    # interval 1
+    # mask1 = np.where(np.logical_and(hsv_list >= lower_red, hsv_list <= upper_red))
+    mask1 = cv2.inRange(hsv_img, lower, upper)
+    # # interval 2
+    # lower_red = np.array([156, 43, 46])
+    # upper_red = np.array([180, 255, 255])
+    # # mask2 = np.where(np.logical_and(hsv_list >= lower_red, hsv_list <= upper_red))
+    # mask2 = cv2.inRange(hsv_img, lower_red, upper_red)
+    # mask = mask1 + mask2
+    mask = mask1
+    return mask
+
 if __name__ == '__main__':
-    pcd_path = '/home/pyhuang/excavator_arm_obstacle_avoidance/motion_planning/scripts/pointcloud_xyzrgba.txt'
-    rbg_list = load_color_to_ndarray(pcd_path)
-    for i in range(0, 530000 - len(rbg_list)):
-        rbg_list.append([0, 0, 0])
-    rbg_list = np.array(rbg_list, dtype=np.uint8)
-    print(rbg_list.shape)
-    red_colors = rbg_list.reshape((530, 1000, 3))
+    pcd_path = '/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/pointcloud_xyzrgba.txt'
+    data = np.loadtxt(pcd_path)
+    rbg_list = np.array(data[..., -3:], dtype=np.uint8)
+    R = rbg_list[:, 2]
+    G = rbg_list[:, 1]
+    B = rbg_list[:, 0]
+    rgb_list = np.zeros_like(rbg_list)
+    rgb_list[:, 0] = R
+    rgb_list[:, 1] = G
+    rgb_list[:, 2] = B
+    # rbg_list = load_color_to_ndarray(pcd_path)
+    old_length = len(rgb_list)
+    for i in range(0, 71100 - old_length):
+        rgb_list = np.concatenate((rgb_list, np.array([[0, 0, 0]])), axis=0)
+    rgb_list = np.array(rgb_list, dtype=np.uint8)
+    print(rgb_list.shape)
+    red_colors = rgb_list.reshape((711, 100, 3))
     
     #Method 1
-    rbg_list = rbg_list.reshape((1, rbg_list.shape[0], 3))
-    hsv_img = cv2.cvtColor(rbg_list, cv2.COLOR_RGB2HSV)
-    mask = segmentRed(hsv_img)
+    hsv_img = cv2.cvtColor(red_colors, cv2.COLOR_RGB2HSV)
+    
+    cv2.namedWindow("RGB", 2)
+    cv2.imshow('RGB', red_colors)
+    lower = np.array([100, 43, 46])
+    upper = np.array([140, 255, 255])
+    mask = segmentArm(hsv_img, lower, upper)
     # mask = mask.reshape((530, 1000))
     binary_mask = np.where(mask==255)
-    fig, axs = plt.subplots(2)
-    axs[0].imshow(red_colors)
-    axs[1].imshow(mask, cmap='gray', vmin=0, vmax=255)
-    plt.show()
+    dark_idx = np.where(mask == 0)
+    dark_place = red_colors[dark_idx]
+    red_place = red_colors[binary_mask]
+    
+    old_length = dark_place.shape[0]
+    while old_length % 100 != 0:
+        old_length += 1
+        dark_place = np.concatenate((dark_place, np.array([[0, 0, 0]])), axis=0)
+    old_length = red_place.shape[0]
+    while old_length % 100 != 0:
+        old_length += 1
+        red_place = np.concatenate((red_place, np.array([[0, 0, 0]])), axis=0)
+    red_place = np.array(red_place.reshape((-1, 100, 3)), np.uint8)
+    cv2.namedWindow("Target", 2)
+    cv2.imshow("Target", red_place)
+    red_hsv = cv2.cvtColor(red_place, cv2.COLOR_RGB2HSV)
+    def getTarget(event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            print("target: ", red_hsv[y, x])
+    cv2.setMouseCallback("Target", getTarget)
+    dark_place = dark_place.reshape((-1, 100, 3))
+    dark_place = np.array(dark_place, np.uint8)
+    cv2.namedWindow("rest", 2)
+    cv2.imshow("rest", dark_place)
+    dark_hsv = cv2.cvtColor(dark_place, cv2.COLOR_RGB2HSV)
+    def getpos(event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            print(dark_hsv[y, x])
+    cv2.setMouseCallback("rest", getpos)
+
+    cv2.namedWindow("mask", 2)
+    cv2.imshow('mask', mask)
+    cv2.waitKey(0)
 
     #Method 2
     # mask = np.zeros_like(red_colors)

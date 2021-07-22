@@ -16,12 +16,10 @@ from std_msgs.msg import Header
 import tf
 import cv2
 
-def segmentRed(hsv_img):
+def segmentArm(hsv_img, lower, upper):
     # interval 1
-    lower_red = np.array([9, 43, 46])
-    upper_red = np.array([25, 255, 255])
     # mask1 = np.where(np.logical_and(hsv_list >= lower_red, hsv_list <= upper_red))
-    mask1 = cv2.inRange(hsv_img, lower_red, upper_red)
+    mask1 = cv2.inRange(hsv_img, lower, upper)
     # # interval 2
     # lower_red = np.array([156, 43, 46])
     # upper_red = np.array([180, 255, 255])
@@ -231,10 +229,10 @@ def load_pcd_to_ndarray(pcd_path):
                 #pt_color.append(pt[3])
 
         # Color Filter (Remove Red Points)
-        pt_color = np.array(rbg_list, dtype=np.uint8)
-        pt_color = pt_color.reshape((1, pt_color.shape[0], 3))
-        hsv_img = cv2.cvtColor(pt_color, cv2.COLOR_RGB2HSV)
-        mask = segmentRed(hsv_img)
+        # pt_color = np.array(rbg_list, dtype=np.uint8)
+        # pt_color = pt_color.reshape((1, pt_color.shape[0], 3))
+        # hsv_img = cv2.cvtColor(pt_color, cv2.COLOR_RGB2HSV)
+        # mask = segmentRed(hsv_img)
 
 
         # apply coordinate transformation, change points from camera coordinate to robot_camera_coordinate
@@ -294,38 +292,65 @@ def camera_global_to_rotation_center(camera_global_coordinates):
     return global_coordinates
 
 
-def remove_excavator_pts(global_coordinates, color_lists):
-    # apply some kinds of algorithm to remove excavator arm points from the point clouds
-    # currently apply a bounding box created by hand to remove those points
-    # not the best practice
-    x_lower = 0.26
-    y_lower = -0.14
-    z_lower = -0.18
-    x_upper = x_lower + 0.7
-    y_upper = y_lower + 0.32
-    z_upper = z_lower + 0.38
-    global_data_list = []
-    new_color_list = []
-    for pt, color in zip(global_coordinates, color_lists):
-        if not (pt[0] >= x_lower and pt[0] <= x_upper and pt[1] >= y_lower and pt[1] <= y_upper and pt[2] >= z_lower and pt[2] <= z_upper):
-            global_data_list.append([pt[0],pt[1],pt[2]])
-            new_color_list.append(color)
-
-
-    return global_data_list, new_color_list
-
 # def remove_excavator_pts(global_coordinates, color_lists):
-#     color_img = color_lists.reshape((1, color_list.shape[0], 3))
-#     hsv_img = cv2.cvtColor(color_img, cv2.COLOR_RGB2HSV)
-#     mask = segmentRed(hsv_img)
-#     # index = np.where(mask==0)
-#     index = np.where(mask==255)
-#     # print(index.shape)
-#     print(global_coordinates.shape)
-#     valid = global_coordinates[index[1], :]
-#     colors = color_lists[index[1], :]
-#     return valid.tolist(), colors.tolist()
+#     # apply some kinds of algorithm to remove excavator arm points from the point clouds
+#     # currently apply a bounding box created by hand to remove those points
+#     # not the best practice
+#     x_lower = 0.26
+#     y_lower = -0.14
+#     z_lower = -0.18
+#     x_upper = x_lower + 0.7
+#     y_upper = y_lower + 0.32
+#     z_upper = z_lower + 0.38
+#     global_data_list = []
+#     new_color_list = []
+#     for pt, color in zip(global_coordinates, color_lists):
+#         if not (pt[0] >= x_lower and pt[0] <= x_upper and pt[1] >= y_lower and pt[1] <= y_upper and pt[2] >= z_lower and pt[2] <= z_upper):
+#             global_data_list.append([pt[0],pt[1],pt[2]])
+#             new_color_list.append(color)
 
+
+#     return global_data_list, new_color_list
+
+def remove_excavator_pts(global_coordinates, color_lists, lower, upper, distance = None):
+    color_img = color_lists.reshape((1, color_list.shape[0], 3))
+    # R = color_img[:, 2]
+    # G = color_img[:, 1]
+    # B = color_img[:, 0]
+    # color_rgb = np.zeros_like(color_img)
+    # color_rgb[:, 0] = R
+    # color_rgb[:, 1] = G
+    # color_rgb[:, 2] = B
+    # print(colorimg.shape)
+    hsv_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2HSV)
+    mask = segmentArm(hsv_img, lower, upper)
+    # index = np.where(mask==0)
+    index = np.where(mask==0)
+    # print(index.shape)
+    # print(global_coordinates.shape)
+    valid = global_coordinates[index[1], :]
+    print("rest shape: ", valid.shape)
+    colors = color_lists[index[1], :]
+
+    if distance == None:
+        return valid.tolist(), colors.tolist()
+    else:
+        x = valid[:, 0]
+        y = valid[:, 1]
+        dis = x**2 + y**2
+        remote_idx = np.where(dis > distance **2)
+        close_idx = np.where(dis <= distance **2)
+        isRemote = True
+        if isRemote:
+            print("remote point size: ", remote_idx[0].shape)
+            idx = remote_idx[0]
+        else:
+            print("close point size: ", close_idx[0].shape)
+            idx = close_idx[0]
+        closes = valid[idx, :]
+        colors = colors[idx, :]
+        return  closes.tolist(), colors.tolist()
+    return None, None
 
 
 def load_extracted_pointclouds(filename = 'xyztgba.txt'):
@@ -356,7 +381,7 @@ if __name__ == '__main__':
 
 
     rospack = rospkg.RosPack()
-    directory = rospack.get_path('motion_planning') + '/scripts/test_stone1/'
+    directory = rospack.get_path('motion_planning') + '/scripts/captured_pointclouds/'
 
     # load in 14 captured frames, try to transform them into global frame
     global_data_list = []
@@ -364,7 +389,7 @@ if __name__ == '__main__':
 
     color_list = []
     
-    for ii in range(1,15):
+    for ii in range(1, len(servo_angle) + 1):
         local_data, pt_color = load_pcd_to_ndarray(directory + 'Captured_Frame' + format(ii,'02') + '.pcd')
 
         global_data = local2global(local_data,90 - servo_angle[ii - 1],18,np.array([0.06,0,0]))
@@ -386,12 +411,18 @@ if __name__ == '__main__':
     #data = global_data_list #+ data0 
 
     # change point cloud coordinates from centered at camera coordinate center to the rotation center
-    lower_reds = [np.array([0, 43, 46]), np.array([156, 43, 46])]
-    upper_reds = [np.array([10, 255, 255]), np.array([180, 255, 255])]
 
     global_data_list = camera_global_to_rotation_center(global_data_list)
+    print("global length: ", global_data_list.shape[0])
     color_list = np.array(color_list, np.uint8)
-    global_data_list, color_list = remove_excavator_pts(global_data_list, color_list)
+    lower = np.array([100, 43, 46])
+    # lower = np.array([69, 43, 46])
+    # lower = np.array([80, 43, 46])
+    # lower = np.array([90, 43, 46])
+    upper = np.array([140, 255, 255])
+    # global_data_list, color_list = remove_excavator_pts(global_data_list, color_list, lower, upper)
+    global_data_list, color_list = remove_excavator_pts(global_data_list, color_list, lower, upper, 0.54)
+    # color_list = color_list.tolist()
     data = global_data_list
 
     #data, color_list = load_extracted_pointclouds(rospack.get_path('motion_planning') + '/scripts/pointcloud_xyzrgba.txt')

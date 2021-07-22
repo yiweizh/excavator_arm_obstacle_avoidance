@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+from point_cloud_publisher import float_to_rgb
 import rospy
 import numpy as np
 import time
@@ -41,6 +42,18 @@ class PointCloudSubscriber(object):
                 pointcloud_pt_rgba.append([pt[0],pt[1],pt[2],r,g,b,a])
 
         return pointcloud_pt_rgba
+    
+    def get_pointcloud_with_rgb(self, x_lower, x_upper, y_lower, y_upper, z_lower, z_upper):
+        gen = point_cloud2.read_points(self.obstacle_pointcloud, field_names=("x", "y", "z","rgba"), skip_nans=True)
+        
+        pointcloud_pt_rgb = []
+        
+        for pt in gen:
+            if pt[0] >= x_lower and pt[0] <= x_upper and pt[1] >= y_lower and pt[1] <= y_upper and pt[2] >= z_lower and pt[2] <= z_upper:
+                rgb = float_to_rgb(pt[3])
+                pointcloud_pt_rgb.append([pt[0],pt[1],pt[2], rgb[0], rgb[1], rgb[2]])
+
+        return pointcloud_pt_rgb
 
     def hex2rgba(self,rgba):
         b = rgba % 256
