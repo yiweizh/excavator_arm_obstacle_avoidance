@@ -19,7 +19,7 @@ def segmentArm(hsv_img, lower, upper):
     return mask
 
 if __name__=="__main__":
-    img_path = '/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/toolset/aligned_color_frame12.png'
+    img_path = '/home/pyhuang/VE450/excavator_arm_obstacle_avoidance/perception/dataset/aligned_color_frame7.png'
     img = cv2.imread(img_path)
     cv2.namedWindow('imageshow', 2)
     cv2.imshow('imageshow', img)
@@ -44,8 +44,9 @@ if __name__=="__main__":
     cv2.namedWindow("HSV?", 2)
     cv2.imshow("HSV?", img_hsv)
     cv2.setMouseCallback("RGB?", getpos)
-    lower = np.array([90, 43, 46])
-    upper = np.array([128, 255, 255])
+    # lower = np.array([90, 43, 46])
+    lower = np.array([100, 110, 46])
+    upper = np.array([140, 255, 255])
     mask = segmentArm(img_hsv, lower, upper)
     arm_idx = np.where(mask==255)
     arm_img = RGB_img

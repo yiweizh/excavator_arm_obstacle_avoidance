@@ -381,7 +381,7 @@ if __name__ == '__main__':
 
 
     rospack = rospkg.RosPack()
-    directory = rospack.get_path('motion_planning') + '/scripts/captured_pointclouds/'
+    directory = rospack.get_path('motion_planning') + '/scripts/test_stone1/'
 
     # load in 14 captured frames, try to transform them into global frame
     global_data_list = []
@@ -415,7 +415,8 @@ if __name__ == '__main__':
     global_data_list = camera_global_to_rotation_center(global_data_list)
     print("global length: ", global_data_list.shape[0])
     color_list = np.array(color_list, np.uint8)
-    lower = np.array([100, 43, 46])
+    lower = np.array([100, 110, 46])
+    # lower = np.array([100, 43, 46])
     # lower = np.array([69, 43, 46])
     # lower = np.array([80, 43, 46])
     # lower = np.array([90, 43, 46])
