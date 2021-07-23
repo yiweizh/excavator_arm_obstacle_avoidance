@@ -41,5 +41,8 @@ To start high level control only, start another terminal, enter
 `roscore`
 
 Then, open a terminal in scripts folder, enter
+
 `./high_level_control_with_pointcloud`
+
+Since high level control is used alone, remember to use the rqt GUI that poped out to set the "/measured_angles"
 
