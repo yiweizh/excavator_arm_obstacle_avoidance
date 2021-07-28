@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-from point_cloud_publisher import float_to_rgb
 import rospy
 import numpy as np
 import time
+import ctypes
+import struct
 
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs import point_cloud2
@@ -32,7 +33,7 @@ class PointCloudSubscriber(object):
 
 
     def get_pointcloud_with_color(self, x_lower, x_upper, y_lower, y_upper, z_lower, z_upper):
-        gen = point_cloud2.read_points(self.obstacle_pointcloud, field_names=("x", "y", "z","rgba"), skip_nans=True)
+        gen = point_cloud2.read_points(self.obstacle_pointcloud, field_names=("x", "y", "z","rgb"), skip_nans=True)
         
         pointcloud_pt_rgba = []
         
@@ -42,18 +43,33 @@ class PointCloudSubscriber(object):
                 pointcloud_pt_rgba.append([pt[0],pt[1],pt[2],r,g,b,a])
 
         return pointcloud_pt_rgba
-    
-    def get_pointcloud_with_rgb(self, x_lower, x_upper, y_lower, y_upper, z_lower, z_upper):
-        gen = point_cloud2.read_points(self.obstacle_pointcloud, field_names=("x", "y", "z","rgba"), skip_nans=True)
+
+    def get_pointcloud_rgb(self):
+        gen = point_cloud2.read_points(self.obstacle_pointcloud, field_names=("x", "y", "z","rgb"), skip_nans=True)
         
-        pointcloud_pt_rgb = []
+        pointcloud_pt = []
+        rgb = []
+
+        # for pt in gen:
+        #     for it in pt:
+        #         print(it)
+        #     break
         
         for pt in gen:
-            if pt[0] >= x_lower and pt[0] <= x_upper and pt[1] >= y_lower and pt[1] <= y_upper and pt[2] >= z_lower and pt[2] <= z_upper:
-                rgb = float_to_rgb(pt[3])
-                pointcloud_pt_rgb.append([pt[0],pt[1],pt[2], rgb[0], rgb[1], rgb[2]])
+            r,g,b = self.pack2rgb(pt[3])
+            pointcloud_pt.append([pt[0],pt[1],pt[2],1])
+            rgb.append([r,g,b])
 
-        return pointcloud_pt_rgb
+        return pointcloud_pt,rgb
+
+    def pack2rgb(self,rgb):
+        s = struct.pack('>f',rgb)
+        i = struct.unpack('>l',s)[0]
+        pack = ctypes.c_uint32(i).value
+        r = int((pack & 0x00FF0000) >> 16)
+        g = int((pack & 0x0000FF00) >> 8)
+        b = int((pack & 0x000000FF))
+        return r,g,b
 
     def hex2rgba(self,rgba):
         b = rgba % 256

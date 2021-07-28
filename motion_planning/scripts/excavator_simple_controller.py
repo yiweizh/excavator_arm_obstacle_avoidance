@@ -77,8 +77,8 @@ class BaseControlPID(object):
         self.ke1 = self.b1 / self.a0
         self.ke2 = self.b2 / self.a0
 
-        self.max_pwm = 40
-        self.min_pwm = 30
+        self.max_pwm = 50
+        self.min_pwm = 40
 
     def update(self, target_angle, measured_angle, tolerance = 4.0):
         angle_diff = target_angle - measured_angle

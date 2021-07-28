@@ -166,6 +166,41 @@ def camera_to_robot_camera(pts):
 
     return new_pts
     
+def camera_to_robot_camera_1(pts):
+    # pts: a np array of pts in homogeneous coordinate
+    #      shape: (4,#)
+    # R = np.array([[0,0,1,0], 
+    #               [-1,0,0,0], 
+    #               [0,-1,0,0], 
+    #               [0,0,0,1]])
+    # new_pts = np.dot(R,pts)
+
+    # new_pts[0:3,:] /= new_pts[3,:]
+
+    #new_pts[2,:] *= -1
+
+    xaxis = (1,0,0)
+    yaxis = (0,1,0)
+    zaxis = (0,0,1)
+
+    Ry = tf.transformations.rotation_matrix(np.deg2rad(90.0),yaxis)
+    Rz = tf.transformations.rotation_matrix(np.deg2rad(-90.0),zaxis)
+    R = np.dot(Ry,Rz)
+
+
+    # rotate with respect to x-axis in world frame by 180 degrees
+    # Rx = tf.transformations.rotation_matrix(np.deg2rad(180.0),xaxis)
+
+    # R = np.dot(Rx,R)
+
+    new_pts = np.dot(R,pts)
+    new_pts[0:3,:] /= new_pts[3,:]
+
+    
+
+    return new_pts
+
+
 
 def decode_rgb_from_pcl(rgb):
     # copied from pypcd
@@ -312,8 +347,29 @@ def camera_global_to_rotation_center(camera_global_coordinates):
 
 #     return global_data_list, new_color_list
 
+def remove_excavator_pts_bounding_box(global_coordinates, color_lists):
+    # apply some kinds of algorithm to remove excavator arm points from the point clouds
+    # currently apply a bounding box created by hand to remove those points
+    # not the best practice
+    x_lower = 0.26
+    y_lower = -0.14
+    z_lower = -0.18
+    x_upper = x_lower + 0.7
+    y_upper = y_lower + 0.32
+    z_upper = z_lower + 0.38
+    global_data_list = []
+    new_color_list = []
+    for pt, color in zip(global_coordinates, color_lists):
+        if not (pt[0] >= x_lower and pt[0] <= x_upper and pt[1] >= y_lower and pt[1] <= y_upper and pt[2] >= z_lower and pt[2] <= z_upper):
+            global_data_list.append([pt[0],pt[1],pt[2]])
+            new_color_list.append(color)
+
+
+    return global_data_list, new_color_list
+
+
 def remove_excavator_pts(global_coordinates, color_lists, lower, upper, distance = None):
-    color_img = color_lists.reshape((1, color_list.shape[0], 3))
+    color_img = color_lists.reshape((1, color_lists.shape[0], 3))
     # R = color_img[:, 2]
     # G = color_img[:, 1]
     # B = color_img[:, 0]

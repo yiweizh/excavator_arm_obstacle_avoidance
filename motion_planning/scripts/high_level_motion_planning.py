@@ -608,7 +608,7 @@ if __name__ == '__main__':
     # print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
 
     # cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,40.0,50.0])
-    cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,49.0,120.0])
+    cartesian_target = excavator_motion_planning.forward_kinematics([90.0,25.0,40.0])
     # cartesian_target = excavator_motion_planning.forward_kinematics([0.0,20.0,21.0])
     # cartesian_target = excavator_motion_planning.forward_kinematics([90.0,20.0,21.0])
     print("cartesian target: %f %f %f", cartesian_target[0][0], cartesian_target[0][1], cartesian_target[0][2])
