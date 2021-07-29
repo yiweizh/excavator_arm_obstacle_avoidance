@@ -376,6 +376,14 @@ class ExcavatorMotionPlanning(object):
             if not self.reached_target:
                 self.path_planning()
                 self.replanning_counter = 0
+
+            else:
+                self.next_target_set.angle_base = current_joint_coordinate[0]
+                self.next_target_set.angle_boom = current_joint_coordinate[1]
+                self.next_target_set.angle_stick = current_joint_coordinate[2]
+
+                self.target_publisher.publish(self.next_target_set)
+
         else:
             # select next target
 
@@ -608,8 +616,8 @@ if __name__ == '__main__':
     # print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
 
     # cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,40.0,50.0])
-    cartesian_target = excavator_motion_planning.forward_kinematics([90.0,25.0,40.0])
-    # cartesian_target = excavator_motion_planning.forward_kinematics([0.0,20.0,21.0])
+    # cartesian_target = excavator_motion_planning.forward_kinematics([90.0,50.0,90.0])
+    cartesian_target = excavator_motion_planning.forward_kinematics([0.0,20.0,21.0])
     # cartesian_target = excavator_motion_planning.forward_kinematics([90.0,20.0,21.0])
     print("cartesian target: %f %f %f", cartesian_target[0][0], cartesian_target[0][1], cartesian_target[0][2])
     pts_joint_space = excavator_motion_planning.inverse_kinematics(cartesian_target[0])

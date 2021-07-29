@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
         local_data = camera_to_robot_camera_1(np.array(local_data_camera).T)
 
-        global_data = local2global(local_data,90 - servo_angle[ii],18,np.array([0.06,0,0]))
+        global_data = local2global(local_data,90 - servo_angle[ii],25,np.array([0.06,0,0]))
 
         global_data_list += (global_data.T)[:,0:3].tolist()
         color_list += pt_color
@@ -61,6 +61,11 @@ if __name__ == '__main__':
         data_global = camera_global_to_rotation_center(global_data_list)
         
         point_cloud_publisher.publish_rgb(data_global.tolist(),color_list)
+
+    control_signal.boom_servo = 90
+    camera_servo_publisher.publish(control_signal) # go to the front
+
+    time.sleep(1)
 
     control_signal.boom_servo = 90
     camera_servo_publisher.publish(control_signal) # go to the front
