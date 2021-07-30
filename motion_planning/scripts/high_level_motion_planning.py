@@ -21,6 +21,7 @@ import copy
 
 from point_cloud_subscriber import PointCloudSubscriber # subscriber class for obstacles
 from angle_subscriber import AngleSubscriber # subscriber class for real excavator angles
+from bucket_target_subscriber import BucketTargetSubscriber # subscriber for bucket target
 
 from motion_planning.msg import excavator_angles # data type for control command
 
@@ -40,6 +41,8 @@ class ExcavatorMotionPlanning(object):
         self.target_publisher = rospy.Publisher('target_angles', excavator_angles, queue_size=1) # publisher for selected target
         self.measured_angle_subscriber = AngleSubscriber(topic = 'measured_angles') # subscriber for excavator angles, will be used for selecting target
         self.obstacle_subscriber = PointCloudSubscriber("Obstacle_pointcloud") # subscriber for obstacles
+        self.bucket_goal_subscriber = BucketTargetSubscriber("/bucket_target_point") # subscriber for bucket target
+
 
         # target msg we will publish
         self.next_target_set = excavator_angles()
@@ -69,7 +72,9 @@ class ExcavatorMotionPlanning(object):
 
 
         # storage variables
-        self.bucket_goal = [] # goal for the bucket to reach, in terms of excavator coordinate system， [x,y,z]
+        # self.bucket_goal = [] # goal for the bucket to reach, in terms of excavator coordinate system， [x,y,z]
+        self.bucket_goal = self.bucket_goal_subscriber.get_target()
+        print("initial goal: %f, %f, %f"%(self.bucket_goal[0],self.bucket_goal[1],self.bucket_goal[2]))
         self.collision_free_path = [] # a series of goal points for our excavator arm to reach [angle_base,angle_boom,angle_stick]
 
         self.obstacle_tree = []
@@ -97,6 +102,7 @@ class ExcavatorMotionPlanning(object):
         # bucket_goal in the format [x,y,z]
         self.bucket_goal = bucket_goal
         self.reached_target = False
+        self.collision_free_path = []
         print("goal: %lf, %lf, %lf"%(bucket_goal[0],bucket_goal[1],bucket_goal[2]))
         if self.visualize:
             self.target_visualization.publish([bucket_goal])
@@ -368,12 +374,28 @@ class ExcavatorMotionPlanning(object):
         #print(pts)
         #print(current_joint_coordinate)
 
-        
+        # get the latest target, check whether the new target is consistent with the initial one
+        new_bucket_target = self.bucket_goal_subscriber.get_target()
+        print("---")
+        print("new_bucket_target: %f,%f,%f"%(new_bucket_target[0],new_bucket_target[1],new_bucket_target[2]))
+        print("current_target: %f,%f,%f"%(self.bucket_goal[0],self.bucket_goal[1],self.bucket_goal[2]))
+        if not(new_bucket_target[0] == self.bucket_goal[0] and new_bucket_target[1] == self.bucket_goal[1] and new_bucket_target[2] == self.bucket_goal[2]):
+            # stop operation
+            self.next_target_set.angle_base = current_joint_coordinate[0]
+            self.next_target_set.angle_boom = current_joint_coordinate[1]
+            self.next_target_set.angle_stick = current_joint_coordinate[2]
+
+            self.target_publisher.publish(self.next_target_set)
+
+            # set new target, clear path
+            self.set_bucket_goal(new_bucket_target)
+            print("change target!")
 
 
 
         if self.collision_free_path == []: #or self.replanning_counter >= self.replanning_bound:
             if not self.reached_target:
+                print("here")
                 self.path_planning()
                 self.replanning_counter = 0
 
@@ -390,9 +412,9 @@ class ExcavatorMotionPlanning(object):
             # currently, assign the next target to be the first element in the collision_free_path
             
             next_target = self.collision_free_path[0]
-            print("---")
-            print("previous stick: %f, current stick: %f, target stick: %f"%(self.previous_stick,current_joint_coordinate[2],next_target[2]))
-            print("base_error = %f, base_tolerance = %f, boom_error = %f, boom_tolerance = %f"%(abs(next_target[0] - current_joint_coordinate[0]),self.base_tolerance,abs(next_target[1] - current_joint_coordinate[1]),self.boom_tolerance))
+            # print("---")
+            # print("previous stick: %f, current stick: %f, target stick: %f"%(self.previous_stick,current_joint_coordinate[2],next_target[2]))
+            # print("base_error = %f, base_tolerance = %f, boom_error = %f, boom_tolerance = %f"%(abs(next_target[0] - current_joint_coordinate[0]),self.base_tolerance,abs(next_target[1] - current_joint_coordinate[1]),self.boom_tolerance))
             # check whether the target has been reached
             if abs(next_target[0] - current_joint_coordinate[0]) < self.base_tolerance \
                 and abs(next_target[1] - current_joint_coordinate[1]) < self.boom_tolerance\
@@ -615,15 +637,15 @@ if __name__ == '__main__':
     # pts_cartesian = excavator_motion_planning.forward_kinematics(pts_joint_space)
     # print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
 
-    # cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,40.0,50.0])
+    cartesian_target = excavator_motion_planning.forward_kinematics([-90.0,40.0,50.0])
     # cartesian_target = excavator_motion_planning.forward_kinematics([90.0,50.0,90.0])
-    cartesian_target = excavator_motion_planning.forward_kinematics([0.0,20.0,21.0])
+    # cartesian_target = excavator_motion_planning.forward_kinematics([0.0,20.0,21.0])
     # cartesian_target = excavator_motion_planning.forward_kinematics([90.0,20.0,21.0])
     print("cartesian target: %f %f %f", cartesian_target[0][0], cartesian_target[0][1], cartesian_target[0][2])
-    pts_joint_space = excavator_motion_planning.inverse_kinematics(cartesian_target[0])
-    print("ik result: [%f,%f,%f]"%(pts_joint_space[0],pts_joint_space[1],pts_joint_space[2]))
-    pts_cartesian = excavator_motion_planning.forward_kinematics(pts_joint_space)
-    print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
+    # pts_joint_space = excavator_motion_planning.inverse_kinematics(cartesian_target[0])
+    # print("ik result: [%f,%f,%f]"%(pts_joint_space[0],pts_joint_space[1],pts_joint_space[2]))
+    # pts_cartesian = excavator_motion_planning.forward_kinematics(pts_joint_space)
+    # print("fk target: [%f,%f,%f]"%(pts_cartesian[0][0],pts_cartesian[0][1],pts_cartesian[0][2]))
 
     # joint_space = JointSpace(copy.copy(pts_joint_space))
 
@@ -654,7 +676,7 @@ if __name__ == '__main__':
     
 
 
-    excavator_motion_planning.set_bucket_goal(pts_cartesian[0])
+    # excavator_motion_planning.set_bucket_goal(pts_cartesian[0])
     try:
         while not rospy.is_shutdown():
             #xyz_pts = excavator_motion_planning.get_next_target()

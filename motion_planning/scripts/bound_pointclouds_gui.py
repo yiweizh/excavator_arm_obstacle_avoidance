@@ -219,7 +219,7 @@ class Ui_MainWindow(object):
 
 
         
-        pcl_list = self.point_cloud_subscriber_class.get_pointcloud_with_rgb(x, x + x_length, y, y + y_length, z, z + z_length)
+        pcl_list = self.point_cloud_subscriber_class.get_pointcloud_with_color(x, x + x_length, y, y + y_length, z, z + z_length)
         np.savetxt(self.filename,np.array(pcl_list))
 
         print("bounding box stored, file name: %s"%(self.filename))
