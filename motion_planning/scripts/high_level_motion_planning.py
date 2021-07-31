@@ -555,7 +555,11 @@ class ExcavatorMotionPlanning(object):
         A = len_square - self.boom_len*self.boom_len + self.stick_len *self.stick_len
         add_term = self.boom_len+self.stick_len
         sub_term = self.boom_len-self.stick_len
-        B = math.sqrt((len_square-sub_term*sub_term)*(add_term*add_term-len_square))
+        term = (len_square - sub_term * sub_term) * (add_term * add_term - len_square)
+        if (term <= 0):
+            return [-360,-360,-360]
+        else:
+            B = math.sqrt((len_square-sub_term*sub_term)*(add_term*add_term-len_square))
 		
         angles = []
 		
