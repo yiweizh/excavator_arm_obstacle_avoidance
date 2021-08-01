@@ -53,9 +53,13 @@ class ExcavatorMotionPlanning(object):
         self.close_distance = 0.3 # unit: m
         self.boom_len = 0.482 # unit: m
         self.stick_len = 0.255 # unit: m
-        self.boom_origin_dev = 0.04 # unit: m [WARNING: NOT MEASURED YET]
-        self.curve_dev = 0.19 # unit: m [WARNING: NOT MEASURED YET]
-        self.curve_h = 0.11 # unit: m  [WARNING: NOT MEASURED YET]
+        self.boom_origin_dev = 0.04 # unit: m 
+        self.curve_dev = 0.19 # unit: m 
+        self.curve_h = 0.11 # unit: m  
+        self.bucket_end_len = 0.09 # unit: m 
+        self.bucket_end_angle = -math.pi/36
+        self.bucket_curve_len = 0.08 # unit: m 
+        self.bucket_curve_angle = math.pi * 4 / 9
 
         self.ep = 0.0000000000001 # floating point precision [USAGE: avoid failures of asin(x)]
 
@@ -162,6 +166,11 @@ class ExcavatorMotionPlanning(object):
             print("Input goal invalid! No path generation")
             return
 
+        # check whether the goal is in collision
+        goal_collision, _ = self.check_collision(goal_cell_coordinate)
+        if goal_collision:
+            print("Goal in collision! No path generation")
+            return
 
         # open list
         open_list = fibheap.Fheap() # use a heap to store the open list
@@ -376,9 +385,9 @@ class ExcavatorMotionPlanning(object):
 
         # get the latest target, check whether the new target is consistent with the initial one
         new_bucket_target = self.bucket_goal_subscriber.get_target()
-        print("---")
-        print("new_bucket_target: %f,%f,%f"%(new_bucket_target[0],new_bucket_target[1],new_bucket_target[2]))
-        print("current_target: %f,%f,%f"%(self.bucket_goal[0],self.bucket_goal[1],self.bucket_goal[2]))
+        # print("---")
+        # print("new_bucket_target: %f,%f,%f"%(new_bucket_target[0],new_bucket_target[1],new_bucket_target[2]))
+        # print("current_target: %f,%f,%f"%(self.bucket_goal[0],self.bucket_goal[1],self.bucket_goal[2]))
         if not(new_bucket_target[0] == self.bucket_goal[0] and new_bucket_target[1] == self.bucket_goal[1] and new_bucket_target[2] == self.bucket_goal[2]):
             # stop operation
             self.next_target_set.angle_base = current_joint_coordinate[0]
@@ -395,7 +404,7 @@ class ExcavatorMotionPlanning(object):
 
         if self.collision_free_path == []: #or self.replanning_counter >= self.replanning_bound:
             if not self.reached_target:
-                print("here")
+                #print("here")
                 self.path_planning()
                 self.replanning_counter = 0
 
@@ -463,7 +472,9 @@ class ExcavatorMotionPlanning(object):
 
         self.replanning_counter += 1
         if self.visualize:
-            self.excavator_pts_visualization.publish(self.forward_kinematics(current_joint_coordinate))
+            excavator_pts = self.forward_kinematics(current_joint_coordinate)
+            ordered_excavator_pts = excavator_pts[4:] + excavator_pts[0:4]
+            self.excavator_pts_visualization.publish(ordered_excavator_pts)
             self.target_visualization.publish([self.bucket_goal])
 
         if self.collision_free_path != [] and self.visualize:
@@ -481,7 +492,7 @@ class ExcavatorMotionPlanning(object):
     def forward_kinematics(self, joint_coordinates):
         # input: joint_coordinates [angle_base,angle_boom,angle_stick]
         # output: a list of cartesian_coordinates [x,y,z]
-        #         [bucket_pt, stick_boom_joint,boom_curve_pt,boom_origin]
+        #         [bucket_pt, stick_boom_joint,boom_curve_pt,boom_origin, bucket_end_pt, bucket_curve_pt]
         
         # Exctract the three angles
         raw_base, raw_boom, raw_boom_stick = joint_coordinates
@@ -497,6 +508,9 @@ class ExcavatorMotionPlanning(object):
         bucket_pt_h =  stick_boom_joint_h+ self.stick_len * math.sin(angle_stick)
         boom_origin_h = 0
         boom_curve_pt_h = self.curve_dev * math.sin(angle_boom) + self.curve_h * math.cos(angle_boom)
+
+        bucket_curve_h = bucket_pt_h + self.bucket_curve_len * math.sin(angle_stick + self.bucket_curve_angle)
+        bucket_end_h = bucket_pt_h + self.bucket_end_len * math.sin(angle_stick + self.bucket_end_angle)
         
         
         # Determine the horziontal projection coordinates of the points
@@ -510,6 +524,12 @@ class ExcavatorMotionPlanning(object):
         curve_l = self.curve_dev * math.cos(angle_boom) - self.curve_h * math.sin(angle_boom)
         curve_l_tot = curve_l + self.boom_origin_dev
         
+
+        # Horizontal projection length of the highest point on the curve
+        # and the end point of the bucket
+        bucket_curve_l_tot = arm_l_tot + self.bucket_curve_len * math.cos(angle_stick + self.bucket_curve_angle)
+        bucket_end_l_tot = arm_l_tot + self.bucket_end_len * math.cos(angle_stick + self.bucket_end_angle)
+
         # Obtain the x & y coordinates
         stick_boom_joint_x = joint_l_tot * math.cos(angle_base)
         stick_boom_joint_y = joint_l_tot * math.sin(angle_base)
@@ -523,18 +543,25 @@ class ExcavatorMotionPlanning(object):
         boom_curve_x = curve_l_tot * math.cos(angle_base)
         boom_curve_y = curve_l_tot * math.sin(angle_base)
         
-        
+        bucket_end_x = bucket_end_l_tot * math.cos(angle_base)
+        bucket_end_y = bucket_end_l_tot * math.sin(angle_base)
+
+        bucket_curve_x = bucket_curve_l_tot * math.cos(angle_base)
+        bucket_curve_y = bucket_curve_l_tot * math.sin(angle_base)
         # Return the final results
         res = []
         bucket_pt = [bucket_pt_x, bucket_pt_y, bucket_pt_h]
         stick_boom_joint = [stick_boom_joint_x, stick_boom_joint_y, stick_boom_joint_h]
         boom_origin = [boom_origin_x, boom_origin_y, boom_origin_h]
         boom_curve = [boom_curve_x, boom_curve_y, boom_curve_pt_h]
+        bucket_end = [bucket_end_x, bucket_end_y, bucket_end_h]
+        bucket_curve = [bucket_curve_x, bucket_curve_y, bucket_curve_h]
         res.append(bucket_pt)
         res.append(stick_boom_joint)
         res.append(boom_curve)
         res.append(boom_origin)
-        
+        res.append(bucket_end)
+        res.append(bucket_curve)
         return res
 
 
